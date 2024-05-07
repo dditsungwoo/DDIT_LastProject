@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<!-- 
+	[마이바티스] 스프링에서 "_"를 사용한 컬럼명을 사용 시(BOOK 테이블의 BOOK_ID)
+	카멜케이스로 읽어줌(bookId)
+	ex) 테이블 컬러명이 member_id인 경우 jsp화면단에서 이 값을 사용 시 memberId로 사용
+	-->
+	<settings>
+		<setting name="mapUnderscoreToCamelCase" value="true"/>
+		 <!--  자바의 NULL이 오면 SQL에서 어떻게 처리할 지 정의 -->
+		<setting name="jdbcTypeForNull" value="VARCHAR"/>
+	</settings>
+	<!-- 자주 사용하는 타입의 별칭을 세팅 -->
+	<typeAliases>
+	
+		<!-- 문서발급 -->
+		<typeAlias type="com.team1.workforest.myForm.vo.MyFormVO" alias="mFormVO" />
+		<!-- 크롤링 -->
+		<typeAlias type="com.team1.workforest.crawling.vo.NewsVO" alias="News" />
+		<!-- 사원 -->
+		<typeAlias type="com.team1.workforest.employee.vo.EmployeeVO" alias="empVO" />
+		<typeAlias type="com.team1.workforest.employee.vo.EmployeeAuthVO" alias="empAuthVO" />
+		<!-- 메일 -->
+		<typeAlias type="com.team1.workforest.mail.vo.EmailRecipientVO" alias="emailRecipientVO" />
+		<typeAlias type="com.team1.workforest.mail.vo.EmailVO" alias="emailVO" />
+		<!-- 업무 -->
+		<typeAlias type="com.team1.workforest.duty.vo.DutyRecipientVO" alias="dutyRecipientVO" />
+		<typeAlias type="com.team1.workforest.duty.vo.DutyVO" alias="dutyVO" />
+		<!-- 프로젝트 -->
+		<typeAlias type="com.team1.workforest.project.vo.ProjectDutyReplyVO" alias="projectDutyReplyVO" />
+		<typeAlias type="com.team1.workforest.project.vo.ProjectDutyVO" alias="projectDutyVO" />
+		<typeAlias type="com.team1.workforest.project.vo.ProjectEmployeeVO" alias="projectEmployeeVO" />
+		<typeAlias type="com.team1.workforest.project.vo.ProjectVO" alias="projectVO" />
+		<!-- 결재 -->
+		<typeAlias type="com.team1.workforest.approval.vo.ApvVO" alias="apvVO" />
+		<typeAlias type="com.team1.workforest.approval.vo.ApvLineVO" alias="apvLineVO" />
+		<typeAlias type="com.team1.workforest.approval.vo.ApvLineBkmkVO" alias="apvLineBkmkVO" />
+		<typeAlias type="com.team1.workforest.approval.vo.ApvLineBkmkDetailVO" alias="apvLineBkmkDetailVO" />
+		<typeAlias type="com.team1.workforest.approval.vo.ApvCategoryVO" alias="apvCategoryVO" />
+		<typeAlias type="com.team1.workforest.approval.vo.ApvDocFormVO" alias="apvDocFormVO" />
+		<typeAlias type="com.team1.workforest.approval.vo.ApvBkmkVO" alias="apvBkmkVO" />
+		<typeAlias type="com.team1.workforest.approval.vo.ApvReferVO" alias="apvReferVO" />
+		<!-- 예약/대여 -->
+		<typeAlias type="com.team1.workforest.reservation.car.vo.CarReservationVO" alias="carReservationVO" />
+		<typeAlias type="com.team1.workforest.reservation.car.vo.CarVO" alias="carVO" />
+		<typeAlias type="com.team1.workforest.reservation.meetingroom.vo.MtrEquipmentVO" alias="mtrEquipmentVO" />
+		<typeAlias type="com.team1.workforest.reservation.meetingroom.vo.MtrReservationVO" alias="mtrReservationVO" />
+		<typeAlias type="com.team1.workforest.reservation.meetingroom.vo.MtrVO" alias="mtrVO" />
+		<!-- <typeAlias type="com.team1.workforest.reservation.resources.vo.ResourcesLendVO" alias="resourcesLendVO" />
+		<typeAlias type="com.team1.workforest.reservation.resources.vo.ResourcesVO" alias="resourcesVO" /> -->
+		<!-- 일정 -->
+		<typeAlias type="com.team1.workforest.schedule.vo.ScheduleVO" alias="scheduleVO" />
+		<!-- 휴가 -->
+		<typeAlias type="com.team1.workforest.vacation.vo.VacationCategoryVO" alias="vacationCategoryVO" />
+		<typeAlias type="com.team1.workforest.vacation.vo.VacationRecordVO" alias="vacationRecordVO" />
+		<typeAlias type="com.team1.workforest.vacation.vo.EmpVacationManageVO" alias="empVacationManageVO" />
+		<!-- 근태관리 -->
+		<typeAlias type="com.team1.workforest.attendance.vo.AttendanceManageVO" alias="attendanceManageVO" />
+		<!-- 게시판 -->
+		<typeAlias type="com.team1.workforest.board.notice.vo.NoticeBoardReplyVO" alias="noticeBoardReplyVO" />
+		<typeAlias type="com.team1.workforest.board.notice.vo.NoticeBoardVO" alias="noticeBoardVO" />
+		<typeAlias type="com.team1.workforest.board.freeboard.vo.FreeBoardVO" alias="freeBoardVO" />
+		<typeAlias type="com.team1.workforest.board.freeboard.vo.FreeBoardReplyVO" alias="freeBoardReplyVO" />
+      	<typeAlias type="com.team1.workforest.board.suggestion.vo.SuggestionReplyVO" alias="suggestionReplyVO"/>
+		<typeAlias type="com.team1.workforest.board.suggestion.vo.SuggestionVO" alias="suggestionVO"/>
+		<!-- 채팅 -->
+		<typeAlias type="com.team1.workforest.chat.vo.ChatRoomEmployeeVO" alias="chatRoomEmployeeVO" />
+		<typeAlias type="com.team1.workforest.chat.vo.ChatRoomVO" alias="chatRoomVO" />
+		<typeAlias type="com.team1.workforest.chat.vo.MessageVO" alias="messageVO" />
+	
+		
+		<!-- 설정 -->
+		<typeAlias type="com.team1.workforest.vo.EmpUserSetupVO" alias="empUserSetupVO" />
+		<typeAlias type="com.team1.workforest.vo.UserSetupNtcnMatterVO" alias="userSetupNtcnMatterVO" />
+		<typeAlias type="com.team1.workforest.dashboard.vo.DashboardVO" alias="dashboardVO" />
+		<!-- 바로가기 -->
+		<typeAlias type="com.team1.workforest.vo.GlanceVO" alias="glanceVO" />
+		<!-- 알림 -->
+		<typeAlias type="com.team1.workforest.vo.NotificationVO" alias="notificationVO" />
+		
+		<typeAlias type="com.team1.workforest.vo.CommonCodeGroupVO" alias="comCodeGroupVO" />
+		<typeAlias type="com.team1.workforest.vo.CommonCodeVO" alias="comCodeVO" />
+		<typeAlias type="com.team1.workforest.vo.DepartmentVO" alias="deptVO" />	
+		<typeAlias type="com.team1.workforest.vo.MenuVO" alias="menuVO" />	
+		<typeAlias type="com.team1.workforest.vo.ResponsibilityCategoryVO" alias="responsibilityCategoryVO" />
+		<typeAlias type="com.team1.workforest.vo.SalaryManageVO" alias="alaryManageVO" />
+		<typeAlias type="com.team1.workforest.vo.AppointmentVO" alias="appointmentVO" />	
+		<typeAlias type="com.team1.workforest.vo.AttachedFileVO" alias="attachedFileVO" />	
+		
+		<!-- 관리자 -->
+		<typeAlias type="com.team1.workforest.admin.chart.vo.adminEmpVO" alias="adminEmpVO1" />	
+		
+		<!-- 설문조사 -->
+		<typeAlias type="com.team1.workforest.survey.vo.SurveyVO" alias="surveyVO"/>
+		<typeAlias type="com.team1.workforest.survey.vo.SurveyQuestionVO" alias="surveyQuestionVO"/>
+		<typeAlias type="com.team1.workforest.survey.vo.SurveyParticVO" alias="surveyParticVO"/>
+		<typeAlias type="com.team1.workforest.survey.vo.SurveyChoiceVO" alias="surveyChoiceVO"/>
+		<typeAlias type="com.team1.workforest.survey.vo.SurveyResponseVO" alias="surveyResponseVO"/>
+		
+	</typeAliases>
+</configuration>
+
+
+
+
+
+
+

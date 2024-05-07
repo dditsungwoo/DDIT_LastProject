@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.reservation.car.mapper.CarResveMapper">
+	
+	<!-- 차량 예약 리스트 불러오기 -->
+	<select id="getCarResveList" parameterType="carReservationVO" resultType="carReservationVO">
+		SELECT 
+	    			  R.CAR_RESVE_NO		<!-- 예약 번호 -->
+					, R.CAR_NO				<!-- 차량 번호 -->
+					, C.CAR_NM				<!-- 차량 이름 -->				
+					, R.EMP_NO				<!-- 사원 번호 -->
+					, R.RESVE_BEGIN_DATE	<!-- 예약 시작 일시 -->
+					, R.RESVE_END_DATE		<!-- 예약 종료 일시 -->
+					, R.RESVE_CN 			<!-- 예약 내용 -->
+					, R.RTURN_CD			<!-- 반납 여부 -->
+					, R.ALL_DAY_CD			<!-- 종일 여부 -->
+				
+		FROM 
+    				CAR_RESERVATION R 
+    	INNER JOIN 
+    				CAR C ON R.CAR_NO = C.CAR_NO
+    	WHERE
+    				1 = 1
+    	<if test="carNo != null and carNo != ''">
+		AND
+					R.CAR_NO = #{carNo}
+		</if>
+	</select>
+	
+	<!-- 특정 예약 불러오기 -->
+	<select id="getCarResve" parameterType="String" resultType="carReservationVO">
+		SELECT 
+	    			  R.CAR_RESVE_NO		<!-- 예약 번호 -->
+					, R.CAR_NO				<!-- 차량 번호 -->
+					, C.CAR_NM				<!-- 차량 이름 -->				
+					, R.EMP_NO				<!-- 사원 번호 -->
+					, R.RESVE_BEGIN_DATE	<!-- 예약 시작 일시 -->
+					, R.RESVE_END_DATE		<!-- 예약 종료 일시 -->
+					, R.RESVE_CN 			<!-- 예약 내용 -->
+					, R.RTURN_CD			<!-- 반납 여부 -->
+					, R.ALL_DAY_CD			<!-- 종일 여부 -->
+				
+		FROM 
+    				CAR_RESERVATION R 
+    	INNER JOIN 
+    				CAR C ON R.CAR_NO = C.CAR_NO
+		WHERE
+					R.CAR_RESVE_NO = #{carResveNo}
+				
+	</select>
+	
+	<!-- 내 예약 불러오기 -->
+	<select id="getMyCarResve" resultType="carReservationVO">
+		SELECT 
+    				  R.CAR_RESVE_NO		<!-- 예약 번호 -->
+	    			, R.CAR_NO				<!-- 차량 번호 -->
+					, C.CAR_NM				<!-- 차량 이름 -->	
+	    			, R.RESVE_BEGIN_DATE	<!-- 예약 시작 일시 -->
+	    			, R.RESVE_END_DATE		<!-- 예약 종료 일시 -->
+	    			, R.RESVE_CN 			<!-- 예약 내용 -->
+					, R.RTURN_CD			<!-- 반납 여부 -->
+					, R.ALL_DAY_CD			<!-- 종일 여부 -->
+		FROM 
+    				CAR_RESERVATION R 
+    	INNER JOIN 
+    				CAR C ON R.CAR_NO = C.CAR_NO		
+    	WHERE
+					R.EMP_NO = #{empNo} 
+		AND 
+					R.RESVE_END_DATE>= SYSDATE
+		ORDER BY
+    				R.RESVE_BEGIN_DATE ASC
+	</select>
+	
+	<!-- 내 지난 예약 불러오기 -->
+	<select id="getMyPastCarResve" resultType="carReservationVO">
+		SELECT 
+    				  R.CAR_RESVE_NO		<!-- 예약 번호 -->
+	    			, R.CAR_NO				<!-- 차량 번호 -->
+					, C.CAR_NM				<!-- 차량 이름 -->	
+	    			, R.RESVE_BEGIN_DATE	<!-- 예약 시작 일시 -->
+	    			, R.RESVE_END_DATE		<!-- 예약 종료 일시 -->
+	    			, R.RESVE_CN 			<!-- 예약 내용 -->
+					, R.RTURN_CD			<!-- 반납 여부 -->
+					, R.ALL_DAY_CD			<!-- 종일 여부 -->
+		FROM 
+    				CAR_RESERVATION R 
+    	INNER JOIN 
+    				CAR C ON R.CAR_NO = C.CAR_NO		
+    	WHERE
+					R.EMP_NO = #{empNo}  
+		AND 
+					R.RESVE_BEGIN_DATE >= SYSDATE - 14 
+        AND 
+        			SYSDATE >= R.RESVE_END_DATE 
+		ORDER BY
+    				R.RESVE_END_DATE DESC
+	</select>
+	
+	<!-- 차량 예약 추가 -->
+	<insert id="createCarResve" parameterType="carReservationVO">
+		INSERT INTO CAR_RESERVATION
+    						(
+   							  CAR_RESVE_NO		<!-- 예약 번호 -->
+   							, CAR_NO			<!-- 회의실 번호 -->
+							, EMP_NO			<!-- 사원 번호 -->
+							, RESVE_BEGIN_DATE	<!-- 예약 시작 일시 -->
+							, RESVE_END_DATE	<!-- 예약 종료 일시 -->
+							, RESVE_CN			<!-- 예약 내용 -->
+							, RTURN_CD			<!-- 반납상태 코드 -->
+							, ALL_DAY_CD		<!-- 종일 여부 -->
+							)
+		VALUES 
+							(
+							SEQ_CAR_RESVE.NEXTVAL
+							, #{carNo}
+							, #{empNo}		
+							, TO_DATE(#{resveBeginDate},'YYYY-MM-DD HH24:MI:SS')
+							, TO_DATE(#{resveEndDate},'YYYY-MM-DD HH24:MI:SS')
+							, #{resveCn}
+							, '1'
+							, #{allDayCd}	
+							)
+	</insert>
+	
+	<!-- 차량 예약 수정 -->
+	<update id="updateCarResve" parameterType="carReservationVO">
+		UPDATE CAR_RESERVATION SET 
+   							  CAR_NO = #{carNo}
+							, EMP_NO = #{empNo}
+							, RESVE_BEGIN_DATE = TO_DATE(#{resveBeginDate},'YYYY-MM-DD HH24:MI:SS')
+							, RESVE_END_DATE = TO_DATE(#{resveEndDate},'YYYY-MM-DD HH24:MI:SS')
+							, RESVE_CN = #{resveCn}
+							, RTURN_CD = #{rturnCd}
+							, ALL_DAY_CD = #{allDayCd}
+		WHERE 
+							CAR_RESVE_NO = #{carResveNo}
+	</update>
+	
+	<!-- 차량 반납상태 수정 -->
+	<update id="updateCarReturn" parameterType="carReservationVO">
+		UPDATE 
+				CAR_RESERVATION 
+		SET 
+				RTURN_CD = #{rturnCd}
+		WHERE 
+				CAR_RESVE_NO = #{carResveNo}
+	</update>
+	
+	<!-- 차량 예약 취소 -->
+	<delete id="deleteCarResve" parameterType="String">
+		DELETE 
+				FROM CAR_RESERVATION
+		WHERE
+				CAR_RESVE_NO = #{carResveNo}
+	</delete>
+	
+	<!-- 차량 정보 불러오기 -->
+	<select id="getCarInfo" resultType="carVO">
+		SELECT 
+                  CAR_NO				<!-- 차량 번호 -->
+				, CAR_NM				<!-- 차량 이름 -->
+				, PHOTO_URL				<!-- 사진 URL -->
+				, CAR_USE_POSBL_YN_CD	<!-- 사용가능 여부 코드 -->
+		FROM 
+    			  CAR
+        WHERE 
+        		  CAR_NO=#{carNo}
+	</select>
+	
+	<!-- 차량 목록 불러오기 -->
+	<select id="getCars" resultType="carVO">
+		SELECT 
+					  CAR_NO				<!-- 차량 번호 -->
+					, CAR_NM				<!-- 차량 이름 -->
+					, CAR_USE_POSBL_YN_CD	<!-- 사용가능 여부 코드 -->
+		FROM
+					  CAR
+		ORDER BY 
+					  CAR_USE_POSBL_YN_CD DESC
+					, CAR_NM ASC
+	</select>
+		
+</mapper>
+
+	

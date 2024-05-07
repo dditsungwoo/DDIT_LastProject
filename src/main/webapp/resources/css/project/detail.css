@@ -1,0 +1,69 @@
+@charset "UTF-8";
+
+
+.boxes{
+	height :580px;	
+}
+
+#deleteBox{
+	margin :10px;
+	height:100px;
+}
+
+.duties{
+	background-color: white;
+	margin :5px;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+	height:80px;
+}
+.progressBar{
+	width : 0%;
+	margin :10px;	
+  	background-color: #17c653;  	
+    transition: width 0.3s ease; 
+    position: relative;
+   
+}
+
+ .progressPercent {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: 700;
+    font-size: 1em; 
+    
+} 
+
+.draggable {
+  
+    z-index: 1000; /* 다른 요소들보다 위에 표시되도록 z-index를 설정합니다. */
+}
+#ui-id-1{
+	z-index: 100000; 
+}
+
+
+.swal2-container {
+	z-index: 100000; 
+}
+
+.tooltip{
+	height:200px;
+	width:200px;	
+}
+
+ img{
+	height:100%;
+	width:100%;		
+}
+
+/*  .progressbg{
+	background-color:#f7f7f7;
+	border-radius: 5px;
+	position: relative;	
+	
+}  */
+
+

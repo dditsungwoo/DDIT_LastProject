@@ -1,0 +1,729 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.project.mapper.ProjectMapper">
+
+	<!--  검색을 위한 쿼리 -->
+	<sql id="where"> 
+		<if test="keyword!=null and keyword!=''">
+		<if test="cate == 'prjctNm'">
+			AND PRJCT_NM LIKE '%' || #{keyword} || '%'  
+		</if>
+		<if test="cate == 'detailCn'">
+			AND DETAIL_CN LIKE '%' || #{keyword} || '%'  
+		</if>
+		<if test="cate == 'prjctSttus'">
+			AND PRJCT_STTUS_CD LIKE '%' || #{keyword} || '%'  
+		</if>
+		</if>
+	</sql>
+
+	<!--  프로젝트 전체 리스트 출력 -->
+	<select id="getProjectList" parameterType="hashMap" resultType="projectVO">
+		WITH T AS (    
+		    SELECT ROW_NUMBER() OVER(ORDER BY F.PRJCT_END_DATE ASC) RNUM
+		    	   , COUNT(1) OVER() AS TOTAL
+		    	   , F.* 
+		    FROM (
+		          SELECT 
+		          		A.PRJCT_NO
+		            	, A.PRJCT_NM
+		            	, A.PRJCT_BEGIN_DATE
+		            	, A.PRJCT_END_DATE
+		            	, A.PRJCT_DETAIL_CN
+		            	, A.PRJCT_STTUS_CD 
+		            	, C.CMMN_CD_NM AS EMP_NM                     
+            FROM PROJECT A , PROJECT_EMPLOYEE B, COMMON_CODE C
+		          WHERE  1 = 1 
+			    	AND A.PRJCT_NO=B.PRJCT_NO
+			    	AND A.PRJCT_STTUS_CD =C.CMMN_CD
+				    AND B.EMP_NO=#{empNo}
+				    AND C.CMMN_CD_GROUP='PRJCT001'
+				    AND A.PRJCT_STTUS_CD NOT IN '4'
+				  <include refid="where"></include>	
+		     ) F
+		) 
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN  (#{currentPage}*4) - (4-1) AND (#{currentPage}*4)  
+		
+	</select>
+
+	<!--  페이징을 위해 전체 프로젝트 갯수 -->	
+	<select id="getTotal" resultType="int">
+		SELECT COUNT(*)
+		FROM PROJECT
+		WHERE 1=1
+		<include refid="where"></include>	
+	</select>
+
+	<!--  프로젝트 하위 일감들의 리스트 -->
+	<select id="getProjectDuty" resultType="projectDutyVO" parameterType="projectDutyVO">
+		SELECT  PRJCT_DUTY_NO
+				, A.PRGS_RATE
+				, A.DETAIL_CN
+				, A.ATCHMNFL_NO
+				, A.DUTY_SJ
+				, A.PRJCT_NO
+				, A.EMP_NO
+				, A.PRJCT_END_DATE
+				, TO_CHAR(SYSDATE, 'YYYYMMDD') AS PRJCT_BEGIN_DATE
+				, B.PRJCT_NM AS TEXT
+				, B.PRJCT_END_DATE AS END_DATE
+				, B.PRJCT_STTUS_CD AS PROGRESS
+		  FROM  PROJECT_DUTY A, PROJECT B 	  
+		 WHERE  
+		 		1=1
+		 	AND A.PRJCT_NO =#{prjctNo}
+		 	AND A.PRJCT_NO=B.PRJCT_NO		 
+	</select>
+	
+	<!--  진행률을 계산하는 쿼리 -->
+	<select id="getProgress" parameterType="projectDutyVO" resultType="int">
+	<!-- <if test="prjctNo !=null and !=''"> -->
+		SELECT 		
+	    	(SUM(CASE WHEN 
+	    	PD.PRGS_RATE = 10 THEN 10
+            ELSE PD.PRGS_RATE END) / COUNT(*)) * 10 AS PROJECT_PROGRESS_PERCENTAGE
+		FROM 
+		    PROJECT_DUTY PD 
+		WHERE 
+		    PD.PRJCT_NO = #{prjctNo}
+		<!-- </if>  -->   
+	</select>
+	
+	
+	<!--  진행률을 업데이트하는 쿼리 -->
+	<update id="updateProgress" parameterType="projectDutyVO" >
+		
+		UPDATE 
+			PROJECT_DUTY 
+		SET
+ 			PRGS_RATE=#{prgsRate}
+ 		WHERE
+ 		    PRJCT_DUTY_NO =#{prjctDutyNo}   
+ 		   
+	</update>
+	
+	<!--  하위 일감을 생성하는 쿼리 -->
+	<insert id="addDuty" parameterType="projectDutyVO">
+		<selectKey resultType="String" order="BEFORE" keyProperty="prjctDutyNo">
+			SELECT 
+    			#{prjctNo}  || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(PRJCT_DUTY_NO, 5))) + 1, 1), 3, '0')
+			 FROM 
+   				 PROJECT_DUTY
+		</selectKey>
+
+			INSERT INTO PROJECT_DUTY
+				(PRJCT_DUTY_NO, DETAIL_CN,  DUTY_SJ, PRJCT_NO, EMP_NO,PRJCT_END_DATE,ATCHMNFL_NO)
+			VALUES
+				(#{prjctDutyNo},'새로운 일감입니다','새로운 일감',#{prjctNo},#{empNo},TO_CHAR(SYSDATE + 4, 'YYYYMMDD'),'project/projectDefault.png')	
+	</insert>
+	
+	<!--  하위 일감을 삭제하는 쿼리 -->
+	<delete id="deleteDuties" parameterType="projectDutyVO" >
+		DELETE 
+		  FROM	PROJECT_DUTY
+		 WHERE	PRJCT_DUTY_NO = #{prjctDutyNo}  
+	</delete>
+	
+	<!--  하위 일감 상세 모달을 불러오는 쿼리 -->
+	<select id="getDutyModal" parameterType="projectDutyVO" resultType="projectDutyVO">
+		SELECT
+			A.PRJCT_DUTY_NO
+			, A.PRGS_RATE
+			, A.DETAIL_CN
+			, A.ATCHMNFL_NO
+			, A.DUTY_SJ
+			, A.PRJCT_NO
+			, A.EMP_NO
+			, B.PRJCT_BEGIN_DATE
+			, A.PRJCT_END_DATE
+            , C.EMP_NM
+            , C.PROFL_IMAGE_URL
+			, D.CMMN_CD_NM AS POSITION
+			, E.RSPNSBL_CTGRY_NM AS RSPNSBL
+					
+		FROM 
+			 PROJECT_DUTY A
+			,     PROJECT B 		
+            ,	 EMPLOYEE C
+			, COMMON_CODE D
+			, RESPONSIBILITY_CATEGORY E 
+			
+			
+		WHERE 
+			    1=1 
+			AND A.PRJCT_NO= B.PRJCT_NO					
+			AND A.PRJCT_DUTY_NO =#{prjctDutyNo}		
+            AND A.EMP_NO = C.EMP_NO
+            AND D.CMMN_CD_GROUP='EMP002'
+            AND D.CMMN_CD=C.POSITION_CD
+            AND E.RSPNSBL_CD=C.RSPNSBL_CD
+	</select>
+	
+	<select id="getNameByEmpNo" parameterType="projectDutyVO" resultType="projectDutyVO" >
+		SELECT 
+			EMP_NM
+		FROM 
+			EMPLOYEE
+		WHERE 
+			EMP_NO=#{empNo}			
+	</select>
+	
+	<select id="findEmpByName" resultType="empVO" parameterType="projectDutyVO">
+		SELECT 
+			A.EMP_NM || '(' ||B.DEPT_NM ||')' AS EMP_NM
+           ,A.EMP_NO
+           ,A.CNTC_NO 
+    	FROM 
+    		EMPLOYEE A
+            ,DEPARTMENT B
+   		WHERE 
+   			1=1  
+        	AND A.EMP_NM LIKE '%'||#{empNm}||'%'
+        	AND A.DEPT_NO =B.DEPT_NO
+	</select>
+	
+	<update id="updateDuty" parameterType="projectDutyVO">
+	    UPDATE 
+	    	PROJECT_DUTY
+	    SET
+	    	PRJCT_END_DATE=TO_CHAR(TO_DATE(#{prjctEndDate}, 'YYYY-MM-DD'), 'YYYYMMDD')
+	    	,DUTY_SJ=#{dutySj}
+	    	,DETAIL_CN=#{detailCn}
+	    	,PRGS_RATE=#{prgsRate}
+	    	,EMP_NO=#{empNo}
+	    WHERE 
+	    	PRJCT_DUTY_NO=#{prjctDutyNo}	
+	</update>
+	
+	<!--  project insert 하는 쿼리 -->
+	<insert id="createProject" parameterType="projectVO">
+		<selectKey resultType="String" order="BEFORE" keyProperty="prjctNo">
+			SELECT 
+    			'P' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(PRJCT_NO, 2))) + 1, 1), 3, '0') 
+			 FROM 
+   				 PROJECT
+		</selectKey>
+		INSERT INTO
+			PROJECT(
+			PRJCT_NO
+			, PRJCT_NM
+			, PRJCT_BEGIN_DATE
+			, PRJCT_END_DATE
+			, PRJCT_DETAIL_CN			
+			)
+		VALUES(
+			#{prjctNo}
+			,#{prjctNm}
+			,TO_CHAR(TO_DATE(#{prjctBeginDate}, 'YYYY-MM-DD'), 'YYYYMMDD')
+			,TO_CHAR(TO_DATE(#{prjctEndDate}, 'YYYY-MM-DD'), 'YYYYMMDD')
+			,#{prjctDetailCn}			
+		)				
+	</insert>
+	
+	<!-- 마지막 insert 된 project 를 가져오는 쿼리 -->
+	<select id="selectLast" resultType="projectVO">
+		SELECT 
+			A.PRJCT_NO
+			, A.PRJCT_NM
+			, A.PRJCT_BEGIN_DATE
+			, A.PRJCT_END_DATE
+			, A.PRJCT_DETAIL_CN
+			, A.PRJCT_STTUS_CD		
+		FROM 
+			PROJECT A
+			
+		WHERE 
+			1=1
+		AND	
+			PRJCT_NO = (
+    		SELECT 'P' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(PRJCT_NO, 2))), 1), 3, '0')
+    	FROM
+    		PROJECT
+    		)
+	</select>
+	
+	<!--  project employee insert 하는 쿼리 -->
+	<insert id="createProjectEmployee" parameterType="projectEmployeeVO">
+		INSERT INTO
+			PROJECT_EMPLOYEE(			
+			PRJCT_NO
+			, EMP_NO
+			, PRJCT_EMP_ROLE
+			, EMP_NM
+			)
+		VALUES(
+			#{prjctNo}
+			,#{empNo}
+			,#{prjctEmpRole}
+			,#{empNm}	
+		)				
+	</insert>
+	
+	<!--  empNo로 이름 알아내기 -->
+	<select id="getEmpNmByEmpNo" parameterType="String" resultType="String">
+		SELECT 
+    		EMP_NM
+		FROM 
+   			EMPLOYEE
+   		WHERE 
+   			EMP_NO=#{empNo}	 
+	</select>
+	
+	<!-- 프로젝트의 leader를 받아오는 쿼리 -->
+	<select id="getLeader" parameterType="projectDutyVO" resultType="String">
+		SELECT 
+			EMP_NO
+		FROM
+			PROJECT_EMPLOYEE
+		WHERE 
+			PRJCT_EMP_ROLE='1'
+		AND
+			PRJCT_NO=#{prjctNo}			
+	</select>
+	
+	
+	<select id="getDutyModalForGantt" parameterType="projectDutyVO" resultType="projectDutyVO">
+		SELECT DISTINCT
+			A.PRJCT_DUTY_NO AS ID
+			, ((A.PRGS_RATE)/10) AS PROGRESS
+			, A.DUTY_SJ AS TEXT
+			, B.PRJCT_BEGIN_DATE AS START_DATE
+			, A.PRJCT_END_DATE AS END_DATE
+			, 'true' AS OPEN
+			, '18' AS DURATION
+			, C.EMP_NM
+			, A.PRGS_RATE
+			
+		FROM 
+			     PROJECT_DUTY A
+			,    	  PROJECT B 		
+			,PROJECT_EMPLOYEE C
+		WHERE 
+			    1=1 
+			AND A.PRJCT_NO= B.PRJCT_NO					
+			AND A.PRJCT_NO =#{prjctNo}
+			AND C.PRJCT_NO= A.PRJCT_NO		
+	</select>
+	
+	<select id="getMainGantt" parameterType="projectDutyVO" resultType="projectVO">
+		WITH T AS (    
+		    SELECT ROW_NUMBER() OVER(ORDER BY F.PRJCT_END_DATE ASC) RNUM
+		    	   
+		    	   , F.* 
+		    FROM ( 
+		          SELECT 
+		          		A.PRJCT_NO
+		            	, A.PRJCT_NM
+		            	, A.PRJCT_BEGIN_DATE
+		            	, A.PRJCT_END_DATE
+		            	, A.PRJCT_DETAIL_CN
+		            	,  A.PRJCT_STTUS_CD
+		                
+                   FROM PROJECT A , PROJECT_EMPLOYEE B 
+		          WHERE  1 = 1 
+			    	AND A.PRJCT_NO=B.PRJCT_NO
+				    AND B.EMP_NO=#{empNo}
+			     ) F
+		) 
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN  1 AND 10	
+	</select>
+	
+	<!--사원이 맡고있는 프로젝트 각자의 진행률  -->
+	<select id="allProjectProgress" parameterType="projectVO" resultType="projectVO">
+          WITH T AS (
+		    SELECT 
+		        ROW_NUMBER() OVER (ORDER BY PD.PRJCT_NO) AS RNUM,
+		        PD.PRJCT_NO,
+		        A.PRJCT_NM,
+		        ROUND(SUM(CASE WHEN PD.PRGS_RATE = 10 THEN 10 ELSE PD.PRGS_RATE END) * 10 / NULLIF(COUNT(*), 0), 1) AS TOTAL,
+		        A.PRJCT_BEGIN_DATE,
+		        A.PRJCT_END_DATE,
+		        A.PRJCT_STTUS_CD
+		    FROM 
+		        PROJECT_DUTY PD 
+		    JOIN 
+		        PROJECT A ON A.PRJCT_NO = PD.PRJCT_NO
+		    JOIN 
+		        PROJECT_EMPLOYEE B ON A.PRJCT_NO = B.PRJCT_NO
+		    WHERE 
+		        B.EMP_NO = #{empNo}
+		    GROUP BY 
+		        PD.PRJCT_NO, A.PRJCT_NM, A.PRJCT_BEGIN_DATE, A.PRJCT_END_DATE, A.PRJCT_STTUS_CD
+		    ORDER BY 
+		        PD.PRJCT_NO
+		)
+			SELECT *
+			FROM T
+			WHERE 
+				RNUM  BETWEEN 1 AND 5
+            
+	</select>	
+		
+	<!--  진행중 ,완료 등 프로젝트 상태 COUNT -->	
+	<select id="countProjectSttus" resultType="projectVO" parameterType="projectVO">
+	  SELECT 
+	  	B.CMMN_CD_NM AS PRJCT_STTUS_CD
+	  	, COUNT(A.PRJCT_STTUS_CD) AS TOTAL
+	  	, A.PRJCT_STTUS_CD AS RNUM
+	  FROM
+		  PROJECT A
+	  JOIN
+	  	  COMMON_CODE B ON A.PRJCT_STTUS_CD = B.CMMN_CD
+	  JOIN 
+	      PROJECT_EMPLOYEE C ON A.PRJCT_NO = C.PRJCT_NO	  
+	  	  
+      WHERE
+       	  B.CMMN_CD_GROUP = 'PRJCT001' 
+       	  AND C.EMP_NO=#{empNo}     
+	  GROUP BY
+	  	  B.CMMN_CD_NM,A.PRJCT_STTUS_CD
+	</select>
+	
+	<select id="getEmpImage" parameterType="projectDutyVO" resultType="projectDutyVO" >
+		SELECT
+		   	 D.DEPT_NM ||' '||C.EMP_NM  AS EMP_NM
+		   	,C.PROFL_IMAGE_URL AS ATCHMNFL_NO
+	   		,ROUND(TO_DATE(A.PRJCT_END_DATE, 'YYYY-MM-DD') - SYSDATE) AS PRJCT_END_DATE
+	   		, E.RSPNSBL_CTGRY_NM AS RSPNSBL
+	   		, B.CMMN_CD_NM AS POSITION
+	   		, A.PRJCT_DUTY_NO
+	   	FROM 
+	   	 	PROJECT_DUTY A ,COMMON_CODE B , EMPLOYEE C, DEPARTMENT D , RESPONSIBILITY_CATEGORY E 
+	   	 	
+	   WHERE 
+	   		PRJCT_DUTY_NO=#{prjctDutyNo}
+	   AND  C.POSITION_CD = B.CMMN_CD
+	   AND  C.EMP_NO=A.EMP_NO
+	   AND  C.DEPT_NO=D.DEPT_NO
+	   AND  B.CMMN_CD_GROUP='EMP002'    
+       AND  E.RSPNSBL_CD=C.RSPNSBL_CD
+	</select>	
+	
+		<!--사원이 맡고있는 프로젝트 각자의 진행률  -->
+	<select id="allProjectProgress2" parameterType="projectVO" resultType="projectVO">
+          WITH T AS (
+		    SELECT 
+		        ROW_NUMBER() OVER (ORDER BY A.PRJCT_END_DATE) AS RNUM,
+		        PD.PRJCT_NO,
+		        A.PRJCT_NM,
+		        ROUND(SUM(CASE WHEN PD.PRGS_RATE = 10 THEN 10 ELSE PD.PRGS_RATE END) * 10 / NULLIF(COUNT(*), 0), 1) AS TOTAL,
+		        A.PRJCT_BEGIN_DATE,
+		        A.PRJCT_END_DATE,
+		        A.PRJCT_STTUS_CD
+		    FROM 
+		        PROJECT_DUTY PD 
+		    JOIN 
+		        PROJECT A ON A.PRJCT_NO = PD.PRJCT_NO
+		    JOIN 
+		        PROJECT_EMPLOYEE B ON A.PRJCT_NO = B.PRJCT_NO
+		    WHERE 
+		        B.EMP_NO = #{empNo}
+		        AND A.PRJCT_STTUS_CD NOT IN '4'
+		    GROUP BY 
+		        PD.PRJCT_NO, A.PRJCT_NM, A.PRJCT_BEGIN_DATE, A.PRJCT_END_DATE, A.PRJCT_STTUS_CD
+		    ORDER BY 
+		        PD.PRJCT_NO
+		)
+			SELECT *
+			FROM T
+			WHERE 
+				RNUM  BETWEEN 1 AND 3
+          
+	</select>	
+		
+		
+	<!--  프로젝트의 참여한 사원들의 데이터를 가져오는 쿼리 -->	
+	<select id="getEmployeePicture" parameterType="projectDutyVO" resultType="projectDutyVO">
+		SELECT 
+		     A.EMP_NM
+		    ,A.PROFL_IMAGE_URL 
+		    ,E.DEPT_NM||' '||D1.CMMN_CD_NM||' '||A.EMP_NM||'('||D2.CMMN_CD_NM||')' AS TEXT 
+		    ,A.EMP_NO
+		    ,F.RSPNSBL_CTGRY_NM AS RSPNSBL	
+			,D2.CMMN_CD_NM AS OPEN	    		
+	    FROM 
+	        EMPLOYEE A
+	        , PROJECT B
+	        , PROJECT_EMPLOYEE C
+	        , COMMON_CODE D1
+	        , COMMON_CODE D2
+	        , DEPARTMENT E
+	        ,RESPONSIBILITY_CATEGORY F
+	    WHERE
+	            1=1
+	        AND A.EMP_NO=C.EMP_NO
+	        AND B.PRJCT_NO=C.PRJCT_NO
+	        AND D1.CMMN_CD= A.POSITION_CD
+	        AND D2.CMMN_CD=C.PRJCT_EMP_ROLE
+	        AND A.DEPT_NO=E.DEPT_NO
+	        AND B.PRJCT_NO=#{prjctNo}
+	        AND D1.CMMN_CD_GROUP='EMP002'
+	        AND D2.CMMN_CD_GROUP='PRJCT002'
+	        AND F.RSPNSBL_CD=A.RSPNSBL_CD
+	</select>	
+		
+		<!--  프로젝트의 참여한 사원들의 데이터를 가져오는 쿼리 -->	
+	<select id="getOneEmployeePicture" parameterType="projectDutyVO" resultType="projectDutyVO">
+		SELECT 
+		     A.EMP_NM
+		    ,A.PROFL_IMAGE_URL 
+		    ,E.DEPT_NM||' '||D1.CMMN_CD_NM||' '||A.EMP_NM||'('||D2.CMMN_CD_NM||')' AS TEXT 
+		    ,A.EMP_NO
+		    ,F.RSPNSBL_CTGRY_NM AS RSPNSBL		
+	    FROM 
+	        EMPLOYEE A
+	        , PROJECT B
+	        , PROJECT_EMPLOYEE C
+	        , COMMON_CODE D1
+	        , COMMON_CODE D2
+	        , DEPARTMENT E	        
+	        ,RESPONSIBILITY_CATEGORY F
+	    WHERE
+	            1=1
+	        AND A.EMP_NO=C.EMP_NO
+	        AND B.PRJCT_NO=C.PRJCT_NO
+	        AND D1.CMMN_CD= A.POSITION_CD
+	        AND D2.CMMN_CD=C.PRJCT_EMP_ROLE
+	        AND A.DEPT_NO=E.DEPT_NO
+	        AND B.PRJCT_NO=#{prjctNo}
+	        AND A.EMP_NO=#{empNo}
+	        AND D1.CMMN_CD_GROUP='EMP002'
+	        AND D2.CMMN_CD_GROUP='PRJCT002'
+	        AND F.RSPNSBL_CD=A.RSPNSBL_CD
+	</select>	
+			
+		<!-- 진행도가 100프로가 되면 상태를 완료로 변경시키는 쿼리 -->
+	<update id="doneProjectProgress" parameterType="projectVO">
+		UPDATE 
+			PROJECT
+		SET
+			PRJCT_STTUS_CD = '4'
+		WHERE 
+			PRJCT_NO = #{prjctNo}		 	
+	</update>	
+		
+		<!--////////////////// 댓글 부분입니다///////////////////////////////////////// -->
+		
+		
+		<!-- 하위 일감의 댓글 SELECT -->
+	<select id="getProjectDutyReply" parameterType="projectDutyVO" resultType="projectDutyReplyVO">
+	WITH T AS (    
+	    	SELECT ROW_NUMBER() OVER(ORDER BY CAST(PRJCT_DUTY_RE_NO AS INT) DESC) RNUM
+	      , COUNT(1) OVER() AS TOTAL	    	   
+	      , F.* 
+	    FROM ( 
+		SELECT 
+			    A.PRJCT_DUTY_RE_NO
+			  , A.PRJCT_DUTY_NO
+			  , A.RE_SJ
+			  , A.EMP_NO
+			  , A.WRITNG_DATE
+			  , A.UPDT_DATE
+			  , A.UPPER_RE
+			  ,	B.EMP_NM
+			  , B.PROFL_IMAGE_URL
+			  , C.CMMN_CD_NM AS POSITION
+			  , D.RSPNSBL_CTGRY_NM AS RSPNSBL
+			  
+		FROM 
+			PROJECT_DUTY_REPLY A ,EMPLOYEE B , COMMON_CODE C, RESPONSIBILITY_CATEGORY D
+			
+		WHERE
+			1=1
+			AND PRJCT_DUTY_NO=#{prjctDutyNo}
+			AND A.EMP_NO=B.EMP_NO		
+            AND C.CMMN_CD_GROUP='EMP002'
+            AND C.CMMN_CD=B.POSITION_CD
+            AND D.RSPNSBL_CD=B.RSPNSBL_CD
+			
+			) F
+		) 
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN  (#{currentPage}*3) - (3-1) AND (#{currentPage}*3)  		  
+	</select>	
+		
+	<!--  댓글 인서트 -->	
+	<insert id="insertReply" parameterType="projectDutyReplyVO" >
+		INSERT INTO
+			PROJECT_DUTY_REPLY(
+			  PRJCT_DUTY_RE_NO
+			, PRJCT_DUTY_NO
+			, RE_SJ
+			, EMP_NO
+			, WRITNG_DATE			
+			)
+		VALUES(
+			 SEQ_PRJCT_DUTY_REPLY.NEXTVAL
+			,#{prjctDutyNo}
+			,#{reSj}
+			,#{empNo}
+			,SYSDATE			
+		)				
+	</insert>
+	
+	<select id="selectLastReply" resultType="projectDutyReplyVO">
+		SELECT 
+		     A.PRJCT_DUTY_RE_NO
+		    ,A.PRJCT_DUTY_NO
+		    ,A.RE_SJ
+		    ,A.EMP_NO
+		    ,A.WRITNG_DATE
+		    ,A.UPDT_DATE
+		    ,A.UPPER_RE
+		    ,B.EMP_NM
+		    ,B.PROFL_IMAGE_URL
+		    , C.CMMN_CD_NM AS POSITION
+			, D.RSPNSBL_CTGRY_NM AS RSPNSBL
+		    
+		FROM
+		    PROJECT_DUTY_REPLY A, EMPLOYEE B, COMMON_CODE C, RESPONSIBILITY_CATEGORY D
+		WHERE
+				1=1
+		   	AND PRJCT_DUTY_RE_NO = (
+		        SELECT MAX(TO_NUMBER(PRJCT_DUTY_RE_NO))
+		        FROM PROJECT_DUTY_REPLY
+		    )
+		    AND A.EMP_NO=B.EMP_NO
+		    AND C.CMMN_CD_GROUP='EMP002'
+            AND C.CMMN_CD=B.POSITION_CD
+            AND D.RSPNSBL_CD=B.RSPNSBL_CD
+		    
+	</select>	
+		
+	<!-- 댓글 삭제 -->	
+	<delete id="deleteReply" parameterType="projectDutyReplyVO">
+		DELETE FROM
+			PROJECT_DUTY_REPLY
+		WHERE
+			PRJCT_DUTY_RE_NO=#{prjctDutyReNo}	 			
+	</delete>
+	
+	<!-- 댓글 업데이트 -->
+	<update id="updateReply" parameterType="projectDutyReplyVO">
+		UPDATE
+			PROJECT_DUTY_REPLY
+		SET
+			RE_SJ=#{reSj}
+		WHERE
+			PRJCT_DUTY_RE_NO=#{prjctDutyReNo}			
+	</update>
+		
+	<select id="getPrjctSttusForDashboard" parameterType="projectVO" resultType="projectVO">
+	SELECT 
+	    B.CMMN_CD_NM AS PRJCT_STTUS_CD,
+	    COUNT(A.PRJCT_STTUS_CD) AS TOTAL,
+	    A.PRJCT_STTUS_CD AS RNUM
+	FROM
+	    PROJECT A
+	JOIN
+	    COMMON_CODE B ON A.PRJCT_STTUS_CD = B.CMMN_CD
+	JOIN 
+	    PROJECT_EMPLOYEE C ON A.PRJCT_NO = C.PRJCT_NO
+	WHERE
+	    B.CMMN_CD_GROUP = 'PRJCT001' 
+	    AND C.EMP_NO = #{empNo}
+	    AND A.PRJCT_STTUS_CD = '2'
+	GROUP BY
+	    B.CMMN_CD_NM, A.PRJCT_STTUS_CD
+	</select>	
+		
+		
+	<!--  프로젝트가 대기중일때 시작으로 업데이트해주는 함수 -->	
+	<select id="getStart" parameterType="projectVO" resultType="projectVO">
+		SELECT 
+			  PRJCT_NO
+			, PRJCT_NM
+			, PRJCT_BEGIN_DATE
+			, PRJCT_END_DATE
+			, PRJCT_DETAIL_CN
+			, PRJCT_STTUS_CD
+		FROM
+			PROJECT
+		WHERE
+			PRJCT_NO=#{prjctNo}		
+	</select>	
+	
+	<!--  프로젝트가 대기중일때 시작으로 업데이트해주는 함수 -->		
+	<update id="getStartUpdate" parameterType="projectVO">
+		UPDATE 
+			PROJECT
+		SET
+			PRJCT_STTUS_CD='2'
+		WHERE
+			PRJCT_NO=#{prjctNo}	
+	</update>	
+	
+	<update id="updateLeaderFirst" parameterType="projectEmployeeVO">
+		UPDATE
+			PROJECT_EMPLOYEE
+		SET
+			PRJCT_EMP_ROLE='2'
+		WHERE
+			1=1
+		AND PRJCT_NO=#{prjctNo}
+								
+	</update>
+		
+	<update id="updateLeaderLast" parameterType="projectEmployeeVO">
+		UPDATE
+			PROJECT_EMPLOYEE
+		SET
+			PRJCT_EMP_ROLE='1'
+		WHERE
+			1=1
+		AND PRJCT_NO=#{prjctNo}
+		AND EMP_NO=#{empNo}						
+	</update>
+	
+	<!--  프로젝트가 완료일때 알려주는 쿼리 -->
+	<select id="isProjectDone" parameterType="projectVO" resultType="projectVO">
+		SELECT 		
+    		(SUM(CASE WHEN PD.PRGS_RATE = 10 THEN 10 ELSE PD.PRGS_RATE END) / COUNT(*)) * 10 AS TOTAL
+   			, P.PRJCT_STTUS_CD
+		FROM 
+    		PROJECT_DUTY PD
+    		INNER JOIN PROJECT P ON PD.PRJCT_NO = P.PRJCT_NO
+		WHERE 
+    		PD.PRJCT_NO = #{prjctNo}
+		GROUP BY 
+    		P.PRJCT_STTUS_CD
+	</select>	
+		
+	<!--  프로젝트 전체 리스트 출력 -->
+	<select id="getDoneProjectList" parameterType="projectVO" resultType="projectVO">
+		WITH T AS (    
+		    SELECT ROW_NUMBER() OVER(ORDER BY F.PRJCT_END_DATE ASC) RNUM
+		    	   , COUNT(1) OVER() AS TOTAL
+		    	   , F.* 
+		    FROM (
+		          SELECT 
+		          		A.PRJCT_NO
+		            	, A.PRJCT_NM
+		            	, A.PRJCT_BEGIN_DATE
+		            	, A.PRJCT_END_DATE
+		            	, A.PRJCT_DETAIL_CN
+		            	, A.PRJCT_STTUS_CD 
+		            	, C.CMMN_CD_NM AS EMP_NM                     
+            FROM PROJECT A , PROJECT_EMPLOYEE B, COMMON_CODE C
+		          WHERE  1 = 1 
+			    	AND A.PRJCT_NO=B.PRJCT_NO
+			    	AND A.PRJCT_STTUS_CD =C.CMMN_CD
+				    AND B.EMP_NO=#{empNo}
+				    AND C.CMMN_CD_GROUP='PRJCT001'
+				    AND A.PRJCT_STTUS_CD ='4'
+				  <include refid="where"></include>	
+		     ) F
+		) 
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN  (#{currentPage}*4) - (4-1) AND (#{currentPage}*4)  
+		
+	</select>		
+		
+		
+</mapper>

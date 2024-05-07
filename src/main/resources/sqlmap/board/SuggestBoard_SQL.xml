@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.board.suggestion.mapper.SuggestionMapper">
+	
+	<!--( 제목, 제목+내용 , 작성자 ) 키워드 분류 
+	//getSuggestList->map : {currentPage=2, keyword=제목}
+	-->
+	<sql id="where">
+		<if test="keyword!=null and keyword!=''">
+			<if test="searchOption=='title'">
+				  AND SUGEST_BRD_SJ LIKE '%' || #{keyword} || '%'
+			</if>
+			<if test="searchOption=='titlecontent'">
+		   		AND (SUGEST_BRD_CN LIKE '%' || #{keyword} || '%' OR  SUGEST_BRD_SJ LIKE '%' || #{keyword} || '%')		
+		   </if>
+		   <if test="searchOption=='empNm'">
+				AND EMP_NM LIKE '%' || #{keyword} || '%'	
+			</if>
+		</if>
+	</sql>
+	
+	
+	
+	
+	<!-- 건의 게시판 리스트 및 페이징 -->
+	<select id="list" parameterType="hashMap" resultType="suggestionVO">
+	WITH T AS (
+		    SELECT ROWNUM RNUM
+		    	   ,F.SUGEST_BRD_NO
+		           ,A.EMP_NM
+		           ,F.SUGEST_BRD_CN
+		           ,F.SUGEST_BRD_SJ
+		           ,F.WRITNG_DATE
+		           ,F.RDCNT
+    	FROM (
+	        SELECT   SUGEST_BRD_NO
+	               , EMP_NO 
+	               , SUGEST_BRD_CN
+	               , SUGEST_BRD_SJ
+	               , WRITNG_DATE
+	               , RDCNT
+	         FROM 	SUGGESTION_BOARD ORDER BY TO_NUMBER(SUGEST_BRD_NO) DESC
+    			) F , EMPLOYEE A 
+                WHERE F.EMP_NO = A.EMP_NO
+                <include refid="where"></include>
+			)
+			   SELECT * FROM T 
+		        WHERE T.RNUM BETWEEN (#{currentPage}* 10) - (10 - 1) AND (#{currentPage}* 10)
+				ORDER BY RNUM
+	</select>
+	
+	<!-- 전체 행수 값  -->
+	<select id="getTotal" resultType="int">
+		SELECT COUNT(*)
+		FROM SUGGESTION_BOARD
+		WHERE 1 = 1
+	</select>
+	
+	<!-- 검색한 키워드 행의 수 
+	//getSuggestList->map : {currentPage=2, keyword=제목}
+	-->
+	<select id="getkeywordTotal" parameterType="hashMap" resultType="int">
+		SELECT  COUNT(*)
+		FROM SUGGESTION_BOARD A, EMPLOYEE B 
+		WHERE 
+        A.EMP_NO = B.EMP_NO
+		<include refid="where"></include>
+	</select>
+	
+	
+	
+	<!--  조회수 -->
+	<update id="suggestionView" parameterType="String">
+		UPDATE SUGGESTION_BOARD
+		SET 
+  		RDCNT =  RDCNT + 1   
+		WHERE 
+		SUGEST_BRD_NO = #{sugestBrdNo}
+	</update>
+	
+	
+	
+	
+	<!-- 건의  게시판 상세조회 -->
+	<select id="detail" parameterType="String" resultType="suggestionVO">
+	SELECT 
+	     A.SUGEST_BRD_NO,A.SUGEST_BRD_SJ,A.WRITNG_DATE
+	    ,A.RDCNT,A.SUGEST_BRD_CN,A.ATCHMNFL_NO,A.EMP_NO
+	    ,B.EMP_NM,B.PROFL_IMAGE_URL
+	FROM
+	     SUGGESTION_BOARD A 
+	    ,EMPLOYEE B
+	WHERE 
+	    A.EMP_NO = B.EMP_NO
+	    AND
+	    A.SUGEST_BRD_NO=#{sugestBrdNo}
+	</select>
+	
+	
+	
+	
+	<!-- 건의 게시글 댓글 조회 -->
+	<select id="suggestReplylist" parameterType="suggestionReplyVO" resultType="suggestionReplyVO">
+	SELECT 
+	    A.SUGEST_BRD_RE_NO
+	    , A.RE_SJ, A.EMP_NO
+	    , B.EMP_NM
+	    ,A.WRITNG_DATE
+	    , A.UPDT_DATE
+	    , A.SUGEST_BRD_NO
+	    , A.UPPER_RE
+	    , B.DEPT_NO
+	    , B.POSITION_CD
+	    , C.DEPT_NM 
+	    , D.CMMN_CD_NM
+	    , B.PROFL_IMAGE_URL
+	FROM 
+	    SUGGESTION_BOARD_REPLY A 
+	    , EMPLOYEE B
+	    , DEPARTMENT C
+	    , COMMON_CODE D
+	WHERE 
+	    SUGEST_BRD_NO =#{sugestBrdNo}   AND A.EMP_NO=B.EMP_NO AND C.DEPT_NO=B.DEPT_NO AND B.POSITION_CD = D.CMMN_CD AND 
+	    CMMN_CD_GROUP = 'EMP002'
+	    AND UPPER_RE  IS NULL
+	    ORDER BY TO_NUMBER(A.SUGEST_BRD_RE_NO) 
+	</select>
+	
+	<!-- 건의 게시글 댓글 등록 -->
+	<insert id="SuggestionReplyInsert" parameterType="suggestionReplyVO" >
+		INSERT INTO SUGGESTION_BOARD_REPLY
+		VALUES(
+			(SELECT NVL(MAX(TO_NUMBER(SUGEST_BRD_RE_NO)), 0)+1 FROM SUGGESTION_BOARD_REPLY)
+    		,#{reSj}
+    		,#{empNo}
+    		,SYSDATE
+    		,''
+    		,#{sugestBrdNo}
+    		,''
+		)
+	</insert> 
+	
+	
+	
+	<!-- 대댓글 리스트 출력 -->
+	<select id="suggestionReplyReList" parameterType="suggestionReplyVO" resultType="suggestionReplyVO">
+	SELECT A.SUGEST_BRD_RE_NO
+		 , A.RE_SJ
+		 , A.EMP_NO
+		 , A.WRITNG_DATE
+		 , A.UPDT_DATE
+		 , A.SUGEST_BRD_NO
+		 , A.UPPER_RE
+		 , LEVEL LVL
+         , (SELECT B.CMMN_CD_NM FROM COMMON_CODE B WHERE B.CMMN_CD_GROUP = 'EMP002' AND B.CMMN_CD = (SELECT C.POSITION_CD FROM EMPLOYEE C WHERE C.EMP_NO = A.EMP_NO)) CMMN_CD_NM
+         , (SELECT  DEPT_NM FROM DEPARTMENT A WHERE A.DEPT_NO = (SELECT DEPT_NO FROM EMPLOYEE WHERE EMP_NO=A.EMP_NO) ) DEPT_NM
+         , (SELECT EMP_NM FROM EMPLOYEE WHERE EMP_NO=A.EMP_NO) EMP_NM
+         , (SELECT PROFL_IMAGE_URL FROM EMPLOYEE WHERE EMP_NO = A.EMP_NO) PROFL_IMAGE_URL
+	FROM   
+		 SUGGESTION_BOARD_REPLY A
+		 
+	START WITH A.UPPER_RE IS NULL AND A.SUGEST_BRD_RE_NO = #{sugestBrdReNo}
+	CONNECT BY PRIOR A.SUGEST_BRD_RE_NO = A.UPPER_RE
+	ORDER SIBLINGS BY A.SUGEST_BRD_RE_NO
+	</select>
+	
+	
+	<!--  대댓글 개수 -->
+	<select id="suggestReplyNum" parameterType="String" resultType="int">
+	    SELECT COUNT(*) FROM SUGGESTION_BOARD_REPLY
+		WHERE UPPER_RE = #{sugestBrdReNo}
+	</select>
+	
+	
+	<!--  건의 게시판 댓글 입력완료 후 최신댓글 보여주기 -->
+	<select id="insertSuggestionReplyVO" parameterType="suggestionReplyVO" resultType="suggestionReplyVO">
+		SELECT 
+		    A.SUGEST_BRD_RE_NO
+		    , A.RE_SJ, A.EMP_NO
+		    , B.EMP_NM
+		    ,A.WRITNG_DATE
+		    , A.UPDT_DATE
+		    , A.SUGEST_BRD_NO
+		    , A.UPPER_RE
+		    , B.DEPT_NO
+		    , B.POSITION_CD
+		    , C.DEPT_NM 
+		    , D.CMMN_CD_NM
+		    , B.PROFL_IMAGE_URL
+		FROM 
+		    SUGGESTION_BOARD_REPLY A 
+		    , EMPLOYEE B
+		    , DEPARTMENT C
+		    , COMMON_CODE D
+		WHERE 
+		    SUGEST_BRD_NO =#{sugestBrdNo}  
+		     AND A.EMP_NO=B.EMP_NO
+		      AND C.DEPT_NO=B.DEPT_NO
+		       AND B.POSITION_CD = D.CMMN_CD AND 
+		    CMMN_CD_GROUP = 'EMP002'
+		     AND A.SUGEST_BRD_RE_NO = (SELECT MAX(TO_NUMBER(SUGEST_BRD_RE_NO)) FROM SUGGESTION_BOARD_REPLY WHERE SUGEST_BRD_NO =#{sugestBrdNo})
+		    ORDER BY TO_NUMBER(A.SUGEST_BRD_RE_NO) 
+	</select>
+	
+	
+	
+	
+	
+	<!-- 게시글 삭제 -->
+	<delete id="deleteSuggestion" parameterType="suggestionVO">
+		DELETE FROM SUGGESTION_BOARD
+		WHERE SUGEST_BRD_NO = #{sugestBrdNo}
+	</delete>
+	
+	
+	<!-- 건의 게시판 댓글 삭제 -->
+	<delete id="deleteSuggestionReplyVO" parameterType="suggestionReplyVO">
+		DELETE FROM SUGGESTION_BOARD_REPLY
+		WHERE 
+		SUGEST_BRD_RE_NO = #{sugestBrdReNo}
+		OR
+		UPPER_RE =#{sugestBrdReNo}
+	</delete>
+	
+	<!-- 건의 게시판 대댓글 삭제 -->
+	<delete id="deleteReSugestReply" parameterType="suggestionReplyVO">
+		DELETE FROM SUGGESTION_BOARD_REPLY
+		WHERE SUGEST_BRD_RE_NO = #{sugestBrdReNo}
+	</delete>	
+	
+	<!-- 파일 입출력 -->
+	<insert id="insertAttachedFile" parameterType="attachedFileVO">
+		INSERT INTO ATTACHED_FILE
+		VALUES(
+		#{atchmnflNo}
+		,SEQ_ATTEND.NEXTVAL
+		,#{atchmnflNm}
+		,#{atchmnflOriginNm}
+		,#{atchmnflSize}
+		,''
+		,#{atchmnflUrl}
+		)
+	</insert>
+	
+	<!-- 업로드한 파일 번호 -->
+	<select id="attachmnflNo" resultType="String">
+	SELECT NVL(MAX(TO_NUMBER(ATCHMNFL_NO)), 0) FROM ATTACHED_FILE
+	</select>
+	
+	
+	<!-- 파일 있는 건의 게시판 등록 -->
+	<insert id="createSuggest" parameterType="suggestionVO">
+		INSERT INTO SUGGESTION_BOARD
+		VALUES(
+		(SELECT NVL(MAX(TO_NUMBER(SUGEST_BRD_NO)), 0)+1 FROM SUGGESTION_BOARD)
+		,#{empNo}
+		,#{sugestBrdSj}
+		,SYSDATE
+		,0
+		,''
+		,#{sugestBrdCn}
+		,(SELECT MAX(TO_NUMBER(ATCHMNFL_NO)) FROM ATTACHED_FILE)
+		)
+	</insert>
+	
+	
+	<!-- 파일이 없는 경우 건의게시판 등록 -->
+	<insert id="createSuggestNoFile" parameterType="suggestionVO">
+		INSERT INTO SUGGESTION_BOARD
+		VALUES(
+		(SELECT NVL(MAX(TO_NUMBER(SUGEST_BRD_NO)), 0)+1 FROM SUGGESTION_BOARD)
+		,#{empNo}
+		,#{sugestBrdSj}
+		,SYSDATE
+		,0
+		,''
+		,#{sugestBrdCn}
+		,''
+		)
+	</insert>
+	
+	
+	<!-- 파일이 있는 게시글 수정-->
+	<update id="updateSuggest" parameterType="suggestionVO">
+		UPDATE SUGGESTION_BOARD 
+		SET 
+			SUGEST_BRD_SJ = #{sugestBrdSj}
+			, WRITNG_DATE = SYSDATE
+			, UPDT_DATE = SYSDATE
+			, SUGEST_BRD_CN = #{sugestBrdCn}
+			, ATCHMNFL_NO = #{atchmnflNo}
+		WHERE 
+			 SUGEST_BRD_NO =#{sugestBrdNo}
+	</update>
+	 
+	
+	
+	 
+	<!--
+	게시글 수정
+	/**
+	파일 선택 안하고 할 시 선택 안됌
+	파일이 기존에 있을 시 -> 기존 파일 attached 번호 남아있음
+	파일이 없을 시 -> 그대로 없는 상태
+	**/
+	-->
+	<update id="updateNoFileSuggest" parameterType="suggestionVO">
+		UPDATE SUGGESTION_BOARD 	
+		SET 
+			SUGEST_BRD_SJ = #{sugestBrdSj}
+			, WRITNG_DATE = SYSDATE
+			, UPDT_DATE = SYSDATE
+			, SUGEST_BRD_CN = #{sugestBrdCn}
+		WHERE 
+			 SUGEST_BRD_NO =#{sugestBrdNo}
+	</update>
+	 
+	 <!-- 상세 게시판 파일 목록 -->
+	 <select id="sugestAtchList" parameterType="String" resultType="attachedFileVO">
+	 SELECT 
+		  ATCHMNFL_NO
+		, ATCHMNFL_NM
+		, ATCHMNFL_ORIGIN_NM
+		, ATCHMNFL_SIZE
+		, ATCHMNFL_DWLD_DATE
+		, ATCHMNFL_URL
+	FROM 
+		ATTACHED_FILE
+	WHERE 
+		ATCHMNFL_NO = #{atchmnflNo}
+	 </select>
+	 
+	 <!-- 대댓글 등록
+	 SuggestionReplyVO(sugestBrdReNo=193->selectKey의 결과, reSj=sdfsdfsd, empNo=null, writngDate=null, updtDate=null, sugestBrdNo=83,...)
+	  -->
+	 <insert id="insertReplyRe" parameterType="suggestionReplyVO">
+	 	<selectKey resultType="String" order="BEFORE" keyProperty="sugestBrdReNo">
+	 		SELECT NVL(MAX(TO_NUMBER(SUGEST_BRD_RE_NO)), 0)+1 FROM SUGGESTION_BOARD_REPLY
+	 	</selectKey>
+	 
+	 	INSERT INTO SUGGESTION_BOARD_REPLY
+		VALUES(
+		    #{sugestBrdReNo},
+		    #{reSj},
+		    #{empNo},
+		    SYSDATE,
+		    '',
+		    #{sugestBrdNo},
+		    #{upperRe}
+		)
+	 </insert>
+	
+	<!-- 대댓글 추가 후 보여질 대댓글 1행 검색 -->
+	<select id="getNewSuggestionReply" parameterType="suggestionReplyVO" resultType="suggestionReplyVO">
+		SELECT 
+		A.SUGEST_BRD_RE_NO, A.RE_SJ,A.EMP_NO, A.WRITNG_DATE, A.UPDT_DATE,A.SUGEST_BRD_NO, A.UPPER_RE,
+		B.EMP_NM,
+		C.DEPT_NM,
+		D.CMMN_CD_NM,
+		B.PROFL_IMAGE_URL
+		FROM    SUGGESTION_BOARD_REPLY A , EMPLOYEE B , DEPARTMENT C,COMMON_CODE D
+		WHERE SUGEST_BRD_RE_NO = #{sugestBrdReNo}
+		AND A.EMP_NO = B.EMP_NO
+		AND B.DEPT_NO = C.DEPT_NO
+		AND B.POSITION_CD = D.CMMN_CD
+		AND D.CMMN_CD_GROUP='EMP002'
+	</select>
+	
+	<update id="updateReSugest" parameterType="suggestionReplyVO">
+		UPDATE SUGGESTION_BOARD_REPLY 
+		SET
+		RE_SJ =#{reSj}
+		WHERE 
+		SUGEST_BRD_RE_NO =#{sugestBrdReNo}
+	</update>
+	
+	<select id="getSugestFiles" parameterType="String" resultType="attachedFileVO">
+	SELECT * FROM 
+		ATTACHED_FILE
+	WHERE 
+		ATCHMNFL_NO = #{atchmnflNo}
+	</select>
+	
+	
+	<delete id="deleteUpdateFile" parameterType="attachedFileVO">
+		DELETE 
+		FROM 
+			ATTACHED_FILE
+		WHERE 
+			ATCHMNFL_SEQ = #{atchmnflSeq}
+	</delete>
+	
+	
+	
+	
+	
+	
+</mapper>
+
+

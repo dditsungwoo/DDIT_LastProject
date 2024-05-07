@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.schedulerUtil.mapper.MtrMapper">
+	
+	<select id="getMtr" resultType="String">
+		SELECT MTR_NO
+		FROM MEETINGROOM
+		ORDER BY MTR_NO ASC
+	</select>
+	
+	<select id="getMtrReservation" parameterType="String" resultType="mtrReservationVO">
+		SELECT MR.MTR_RESVE_NO, MR.MTR_NO, MR.EMP_NO, MR.RESVE_BEGIN_DATE, MR.RESVE_END_DATE, MR.RESVE_CN, M.MTR_NM, M.MTR_LOC
+		FROM MEETINGROOM_RESERVATION MR, MEETINGROOM M
+		WHERE M.MTR_NO = #{mtrNo}
+		AND (RESVE_BEGIN_DATE - SYSDATE)*24*60 BETWEEN 25 AND 35
+		AND MR.MTR_NO = M.MTR_NO
+	</select>
+	
+	
+</mapper>

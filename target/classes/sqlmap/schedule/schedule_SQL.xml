@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.schedule.mapper.ScheduleMapper">
+
+	<!-- 내 일정 불러오기 -->
+    <select id="getMyScheduleList" parameterType="map" resultType="scheduleVO">
+    	SELECT 
+				  SCHDUL_NO				
+				, EMP_NO
+				, DEPT_NO
+				, SCHDUL_SE_CD
+				, SCHDUL_SJ
+				, SCHDUL_BEGIN_DATE
+				, SCHDUL_END_DATE
+				, SCHDUL_LOC
+				, SCHDUL_CN
+				, ALL_DAY_CD		
+		FROM 
+				SCHEDULE 
+		WHERE 
+				SCHDUL_SE_CD='1' 
+		AND 
+				EMP_NO = #{empNo}
+				
+		<if test="date != null and date != ''">
+		AND (
+        			TRUNC(SYSDATE) BETWEEN TRUNC(SCHDUL_BEGIN_DATE) AND TRUNC(SCHDUL_END_DATE)
+			    OR 
+			    	TRUNC(SYSDATE) = TRUNC(SCHDUL_BEGIN_DATE)
+			    OR 
+			    	TRUNC(SYSDATE) = TRUNC(SCHDUL_END_DATE)
+        	)
+		</if>
+		ORDER BY
+				SCHDUL_BEGIN_DATE ASC
+    </select>
+    
+    <!-- 팀 일정 불러오기 -->
+    <select id="getTeamScheduleList" parameterType="map" resultType="scheduleVO">
+    	SELECT 
+				  SCHDUL_NO
+				, EMP_NO
+				, DEPT_NO
+				, SCHDUL_SE_CD
+				, SCHDUL_SJ
+				, SCHDUL_BEGIN_DATE
+				, SCHDUL_END_DATE
+				, SCHDUL_LOC
+				, SCHDUL_CN
+				, ALL_DAY_CD		
+		FROM 
+				SCHEDULE 
+		WHERE 
+				(
+					(SCHDUL_SE_CD='1' AND DEPT_NO=(SELECT DEPT_NO FROM EMPLOYEE WHERE EMP_NO = #{empNo}) AND EMP_NO != #{empNo}) 
+        		OR 
+        			(SCHDUL_SE_CD='2' AND DEPT_NO=(SELECT DEPT_NO FROM EMPLOYEE WHERE EMP_NO = #{empNo}))
+        		) 
+		<if test="date != null and date != ''">
+		AND (
+        			TRUNC(SYSDATE) BETWEEN TRUNC(SCHDUL_BEGIN_DATE) AND TRUNC(SCHDUL_END_DATE)
+			    OR 
+			    	TRUNC(SYSDATE) = TRUNC(SCHDUL_BEGIN_DATE)
+			    OR 
+			    	TRUNC(SYSDATE) = TRUNC(SCHDUL_END_DATE)
+        	)
+		</if>
+		ORDER BY
+				SCHDUL_BEGIN_DATE ASC
+    </select>
+    <!-- 본부 일정 불러오기 -->
+    <select id="getDeptScheduleList" parameterType="map" resultType="scheduleVO">
+    	SELECT 
+				  SCHDUL_NO
+				, EMP_NO
+				, DEPT_NO
+				, SCHDUL_SE_CD
+				, SCHDUL_SJ
+				, SCHDUL_BEGIN_DATE
+				, SCHDUL_END_DATE
+				, SCHDUL_LOC
+				, SCHDUL_CN
+				, ALL_DAY_CD		
+		FROM 
+				SCHEDULE 
+		WHERE 
+				SCHDUL_SE_CD='3' AND DEPT_NO LIKE (SELECT SUBSTR(DEPT_NO,0,6) FROM EMPLOYEE WHERE EMP_NO= #{empNo}) || '%'
+		<if test="date != null and date != ''">
+		AND (
+        			TRUNC(SYSDATE) BETWEEN TRUNC(SCHDUL_BEGIN_DATE) AND TRUNC(SCHDUL_END_DATE)
+			    OR 
+			    	TRUNC(SYSDATE) = TRUNC(SCHDUL_BEGIN_DATE)
+			    OR 
+			    	TRUNC(SYSDATE) = TRUNC(SCHDUL_END_DATE)
+        	)
+		</if>
+		ORDER BY
+				SCHDUL_BEGIN_DATE ASC
+    </select>
+    
+    <!-- 회사 일정 불러오기 -->
+    <select id="getCompScheduleList" parameterType="map" resultType="scheduleVO">
+    	SELECT 
+				  SCHDUL_NO
+				, EMP_NO
+				, DEPT_NO
+				, SCHDUL_SE_CD
+				, SCHDUL_SJ
+				, SCHDUL_BEGIN_DATE
+				, SCHDUL_END_DATE
+				, SCHDUL_LOC
+				, SCHDUL_CN
+				, ALL_DAY_CD		
+		FROM 
+				SCHEDULE 
+		WHERE 
+				SCHDUL_SE_CD='4'
+		<if test="date != null and date != ''">
+		AND (
+        			TRUNC(SYSDATE) BETWEEN TRUNC(SCHDUL_BEGIN_DATE) AND TRUNC(SCHDUL_END_DATE)
+			    OR 
+			    	TRUNC(SYSDATE) = TRUNC(SCHDUL_BEGIN_DATE)
+			    OR 
+			    	TRUNC(SYSDATE) = TRUNC(SCHDUL_END_DATE)
+        	)
+		</if>
+		ORDER BY
+				SCHDUL_BEGIN_DATE ASC
+    </select>
+    
+    <!-- 특정 일정 불러오기 -->
+    <select id="getSchedule" resultType="scheduleVO">
+    	SELECT 
+				  SCHDUL_NO
+				, EMP_NO
+				, DEPT_NO
+				, SCHDUL_SE_CD
+				, SCHDUL_SJ
+				, SCHDUL_BEGIN_DATE
+				, SCHDUL_END_DATE
+				, SCHDUL_LOC
+				, SCHDUL_CN
+				, ALL_DAY_CD		
+		FROM 
+				SCHEDULE 
+		WHERE 
+				SCHDUL_NO=#{schdulNo}
+    </select>
+    
+    <!-- 일정 생성 -->
+    <insert id="createSchedule" parameterType="scheduleVO">
+    	INSERT INTO SCHEDULE
+    						(
+   							  SCHDUL_NO
+   							, EMP_NO
+   							, DEPT_NO
+   							, SCHDUL_SE_CD
+   							, SCHDUL_BEGIN_DATE
+   							, SCHDUL_END_DATE
+   							, SCHDUL_SJ
+   							, ALL_DAY_CD
+			   				<if test="schdulCn!=null and schdulCn!=''">
+							, SCHDUL_CN
+							</if>
+							<if test="schdulLoc!=null and schdulLoc!=''">
+							, SCHDUL_LOC
+							</if>
+							)
+		VALUES 
+							(
+							  SEQ_SCHEDULE.NEXTVAL
+							, #{empNo}
+							, (SELECT DEPT_NO FROM EMPLOYEE WHERE EMP_NO=#{empNo})
+							, #{schdulSeCd}
+							, TO_DATE(#{schdulBeginDate},'YYYY-MM-DD HH24:MI:SS')
+							, TO_DATE(#{schdulEndDate},'YYYY-MM-DD HH24:MI:SS')
+							, #{schdulSj}
+							, #{allDayCd}
+							<if test="schdulCn!=null and schdulCn!=''">
+							, #{schdulCn}
+							</if>
+							<if test="schdulLoc!=null and schdulLoc!=''">
+							, #{schdulLoc}
+							</if>	
+							)
+    </insert>
+    
+    <!-- 일정 수정 -->
+    <update id="updateSchedule" parameterType="scheduleVO">
+    	UPDATE SCHEDULE SET 
+   							  EMP_NO = #{empNo}
+   							, DEPT_NO = (SELECT DEPT_NO FROM EMPLOYEE WHERE EMP_NO=#{empNo})
+   							, SCHDUL_SE_CD = #{schdulSeCd}
+   							, SCHDUL_BEGIN_DATE = TO_DATE(#{schdulBeginDate},'YYYY-MM-DD HH24:MI:SS')
+   							, SCHDUL_END_DATE = TO_DATE(#{schdulEndDate},'YYYY-MM-DD HH24:MI:SS')
+   							, SCHDUL_SJ = #{schdulSj}
+   							, ALL_DAY_CD = #{allDayCd}
+			   				<if test="schdulCn!=null and schdulCn!=''">
+							, SCHDUL_CN = #{schdulCn}
+							</if>
+							<if test="schdulLoc!=null and schdulLoc!=''">
+							, SCHDUL_LOC = #{schdulLoc}
+							</if>
+							WHERE SCHDUL_NO = #{schdulNo}	
+    </update>
+    
+    <!-- 일정 삭제 -->
+    <delete id="deleteSchedule" parameterType="String">
+    	DELETE 
+    			FROM SCHEDULE 
+    	WHERE 
+    			SCHDUL_NO=#{schdulNo}
+    </delete>
+    
+</mapper>

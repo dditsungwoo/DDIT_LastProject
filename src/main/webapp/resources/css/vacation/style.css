@@ -1,0 +1,88 @@
+@charset "UTF-8";
+
+#chartDiv {
+    width: 100%;
+    height: 100px;
+    margin-top: 5px;
+}
+#remainDispBox {
+    width: 150px;
+    margin-left: 20px;
+}
+#apvLevelBox {
+    width: 150px;
+}
+#evidenceBox {
+    display: none;
+}
+#vcatnCtgryNoBox {
+    display: none;
+}
+#apvLineDiv {
+    display: none;
+}
+
+.disable {
+    pointer-events: none;
+    opacity: 0.5;
+}
+.vcatn-table {
+    margin-top: 15px;
+}
+
+.circle {
+    background-color: #fff0b6;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin: auto 7px;
+}
+
+.text {
+    display: inline-block;
+}
+#apvLineDispBox {
+    font-size: 16px;
+    font-weight: 700px;
+    margin: 10px auto;
+}
+
+.vcatn-tit-wrap {
+    display: flex;
+    align-items: center;
+}
+
+.arrow-wrap {
+    margin-top: 0px;
+}
+
+.createBtn {
+    min-width: 220px;
+}
+.createBtn:hover {
+    background: rgb(255 255 255 / 100%);
+    transition: background 0.3s;
+}
+
+.vacationContainer {
+    overflow: hidden;
+}
+#vacationBox {
+    padding-right: 15px;
+    overflow-x: scroll;
+}
+.recordContainer {
+    margin-bottom: 20px;
+}
+.vcatn-li {
+    font-size: 19px;
+    font-weight: 600;
+    width: 150px;
+}
+.vcatnCnt {
+    font-size: 22px;
+    font-weight: 600;
+}

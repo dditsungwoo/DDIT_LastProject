@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>workforest</title>
+    <link rel="icon" href="../img/favicon.png">
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="/css/modal.css">
+    <script src="../js/jquery-3.7.0.min.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/stripe-gradient.js"></script>
+</head>
+
+<body>
+    <canvas id="gradient"></canvas>
+
+    <div class="main-container">
+        <header class="custom">
+            <a href="javascript:void(0)" class="logo">WORKFOREST</a>
+            <div class="search-bar">
+                <input type="text" placeholder="Search">
+            </div>
+            <p class="header-txt">김대덕님, 오늘도 힘차게 화이팅하세요!</p>
+            <ul class="wf-util">
+                <li>
+                    <a href="javascript:void(0)" title="채팅">
+                        <i class="xi-wechat"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" title="알림">
+                        <i class="xi-bell"></i>
+                    </a>
+                    <div class="wf-menu-dropdown">
+                        <ul class="alarm-list">
+                            <li>
+                                <img src="/img/icon/avatar.png" class="user-img">
+                                <div>
+                                    <span class="tit">[일정등록]'주간회의' 일정이
+                                        등록되었습니다.</span>
+                                    <p>
+                                        <span class="date">2024-03-03 11:30</span>
+                                        <span class="employee">양연주 사장</span>
+                                    </p>
+                                </div>
+                            </li>
+                            <li>
+                                <img src="/img/icon/avatar.png" class="user-img">
+                                <div>
+                                    <span class="tit">[일정등록]'주간회의' 일정이
+                                        등록되었습니다.</span>
+                                    <p>
+                                        <span class="date">2024-03-03 11:30</span>
+                                        <span class="employee">양연주 사장</span>
+                                    </p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" title="설정">
+                        <i class="xi-cog"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" class="user-img-icon" title="사용자">
+                        <img src="/img/icon/avatar.png" class="user-img">
+                    </a>
+                    <div class="wf-menu-dropdown">
+                        <div class="wf-flex-box">
+                            <img src="/img/icon/avatar.png" class="user-img">
+                            <div>
+                                <span class="user-info">연구개발본부 개발1팀</span>
+                                <span class="user-name">김대덕 사원</span>
+                            </div>
+                        </div>
+                        <div class="menu-wrap">
+                            <a href="#" class="menu-tit my-profile">내 프로필</a>
+                            <a href="#" class="menu-tit logout">로그아웃</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </header>
+        <div class="content-wrap">
+            <aside class="sidebar custom">
+                <div class="sidebar-user-info">
+                    <div class="img-box">
+                        <img src="/img/icon/avatar.png">
+                    </div>
+                    <span class="name">김대덕 사원</span>
+                    <span class="team">연구개발본부 개발팀</span>
+                </div>
+                <div id="leftside-navigation" class="leftside-navigation">
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>업무관리</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">업무</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">프로젝트</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)">
+                                <i class="xi-home"></i>
+                                <span>전자결재</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>예약/신청</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">회의실 예약</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">차량 예약</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">비품 대여</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>일정관리</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">일정</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">휴가</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)">
+                                <i class="xi-home"></i>
+                                <span>근태관리</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>게시판</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">공지사항</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">자유게시판</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">건의게시판</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)">
+                                <i class="xi-home"></i>
+                                <span>조직도</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="custom">
+                <!-- =============== body 시작 =============== -->
+                <div class="wf-main-container">
+                    <!-- =============== 상단타이틀영역 시작 =============== -->
+                    <div class="wf-tit-wrap">
+                        <h1 class="page-tit">모달</h1>
+                        <div class="side-util"></div>
+                    </div>
+                    <!-- =============== 상단타이틀영역 끝 =============== -->
+                    <!-- =============== 컨텐츠 영역 시작 =============== -->
+                    <div class="wf-content-wrap">
+                        <button type="button" class="btn1" modal-id="modal-name">모달버튼</button>
+
+                        <mark style="margin-top: 20px;"> 모달 사용법<br>1) div modal 뭉텅이 복붙! <br> 2) 모달버튼에
+                            modal-id="modal-name"와 modal창 id 값을 동일하게! <br> 3) 만약 실행이 안되면, common.js 파일이 잘 연결되있는지
+                            확인!</mark>
+                        <img src="/img/modal-ex.jpg" alt="" style="width: 50%;">
+                    </div>
+                    <!-- =============== 컨텐츠 영역 끝 =============== -->
+                </div>
+                <!-- =============== body 끝 =============== -->
+            </main>
+        </div>
+    </div>
+</body>
+
+<div class="modal" id="modal-name">
+    <div class="modal-cont">
+        <h1 class="modal-tit">휴가</h1>
+        <div class="modal-content-area">
+            <form action="" method="">
+                <ul class="wf-insert-form2 vertical">
+                    <li>
+                        <label for="cc">사원번호<i class="i">*</i></label>
+                        <div>
+                            <input type="text" id="cc" placeholder="텍스트를 입력해주세요">
+                        </div>
+                    </li>
+                    <li>
+                        <label for="cc">사원번호<i class="i">*</i></label>
+                        <div>
+                            <input type="text" id="cc" placeholder="텍스트를 입력해주세요">
+                        </div>
+                    </li>
+                    <li>
+                        <label for="cc">사원번호<i class="i">*</i></label>
+                        <div>
+                            <input type="text" id="cc" placeholder="텍스트를 입력해주세요">
+                        </div>
+                    </li>
+                    <li>
+                        <label for="cc">사원번호<i class="i">*</i></label>
+                        <div>
+                            <input type="text" id="cc" placeholder="텍스트를 입력해주세요">
+                        </div>
+                    </li>
+                    <li>
+                        <label for="cc">사원번호<i class="i">*</i></label>
+                        <div>
+                            <input type="text" id="cc" placeholder="텍스트를 입력해주세요">
+                        </div>
+                    </li>
+                </ul>
+
+            </form>
+        </div>
+
+        <div class="modal-btn-wrap">
+            <button class="btn6">취소</button>
+            <button class="btn2">승인요청</button>
+        </div>
+
+        <button class="close-btn"></button>
+    </div>
+</div>
+
+</html>

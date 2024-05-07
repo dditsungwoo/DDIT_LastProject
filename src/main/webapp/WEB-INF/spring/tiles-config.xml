@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC 
+"-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" 
+"http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+<tiles-definitions>
+
+   <!-- main layout -->
+   <definition name="layout" template="/WEB-INF/views/tiles/layout.jsp">
+	  <put-attribute name="resource" value="/WEB-INF/views/tiles/resource.jsp" />
+      <put-attribute name="header" value="/WEB-INF/views/tiles/header.jsp" />
+      <put-attribute name="left" value="/WEB-INF/views/tiles/left.jsp" />
+   </definition>
+   
+   <!-- admin layout -->
+   <definition name="adminLayout" template="/WEB-INF/views/tiles/adminLayout.jsp">
+	  <put-attribute name="resource" value="/WEB-INF/views/tiles/resource.jsp" />
+      <put-attribute name="header" value="/WEB-INF/views/tiles/header.jsp" />
+      <put-attribute name="adminLeft" value="/WEB-INF/views/tiles/adminLeft.jsp" />
+   </definition>
+   
+   <!-- layout -->
+   <!-- <definition name="*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/{1}.jsp" />
+   </definition> -->
+   
+   <definition name="accessError" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/accessError.jsp" />
+   </definition>
+   <definition name="findPw" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/findPw.jsp" />
+   </definition>
+   <definition name="home" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/home.jsp" />
+   </definition>
+   <definition name="login" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/login.jsp" />
+   </definition>
+   
+   <definition name="approval/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/approval/{1}.jsp" />
+   </definition>
+   <definition name="approval/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/approval/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="attendance/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/attendance/{1}.jsp" />
+   </definition>
+   <definition name="attendance/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/attendance/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="board/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/board/{1}.jsp" />
+   </definition>
+   <definition name="board/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/board/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="chat/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/chat/{1}.jsp" />
+   </definition>
+   <definition name="chat/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/chat/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="dashboard/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/dashboard/{1}.jsp" />
+   </definition>
+   <definition name="dashboard/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/dashboard/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="duty/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/duty/{1}.jsp" />
+   </definition>
+   <definition name="duty/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/duty/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="emp/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/emp/{1}.jsp" />
+   </definition>
+   <definition name="emp/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/emp/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="mail/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/mail/{1}.jsp" />
+   </definition>
+   <definition name="mail/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/mail/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="menu/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/menu/{1}.jsp" />
+   </definition>
+   <definition name="menu/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/menu/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="news/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/news/{1}.jsp" />
+   </definition>
+   <definition name="news/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/news/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="project/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/project/{1}.jsp" />
+   </definition>
+   <definition name="project/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/project/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="reservation/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/reservation/{1}.jsp" />
+   </definition>
+   <definition name="reservation/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/reservation/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="schedule/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/schedule/{1}.jsp" />
+   </definition>
+   <definition name="schedule/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/schedule/{1}/{2}.jsp" />
+   </definition>
+   
+   <definition name="vacation/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/vacation/{1}.jsp" />
+   </definition>
+   <definition name="vacation/*/*" extends="layout">
+      <put-attribute name="body" value="/WEB-INF/views/vacation/{1}/{2}.jsp" />
+   </definition>
+     
+   <!-- admin layout -->
+   <definition name="admin/*" extends="adminLayout">
+      <put-attribute name="body" value="/WEB-INF/views/admin/{1}.jsp" />
+   </definition>
+   <definition name="admin/*/*" extends="adminLayout">
+      <put-attribute name="body" value="/WEB-INF/views/admin/{1}/{2}.jsp" />
+   </definition>
+   <definition name="admin/*/*/*" extends="adminLayout">
+      <put-attribute name="body" value="/WEB-INF/views/admin/{1}/{2}/{3}.jsp" />
+   </definition>
+
+</tiles-definitions>

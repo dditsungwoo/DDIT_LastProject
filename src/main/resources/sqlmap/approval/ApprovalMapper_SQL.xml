@@ -1,0 +1,985 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.approval.mapper.ApprovalMapper">
+	
+	<!-- 결재 진행 조회 (결재라인에 해당하는 사원들 정보 포함) -->
+	<select id="getAllProgress" resultType="apvVO" parameterType="String">
+		WITH
+			A AS (
+			    SELECT *
+			    FROM (
+			        SELECT APV_NO
+			             , APV_SE_CD
+			             , APV_LINE_SEQ
+			             , APV_EMP_NO
+			             , APV_STTUS_CD
+			             , LISTAGG(APV_STTUS_CD, ',')
+			                WITHIN GROUP (ORDER BY APV_LINE_SEQ)
+			                OVER ( PARTITION BY APV_NO) AS STR
+			        FROM APV_LINE
+			    )
+			    WHERE APV_SE_CD = '3'
+			    AND APV_STTUS_CD = '0'
+			    AND STR NOT LIKE '%N%'
+			    AND STR LIKE 'Y%'
+			),
+			B AS (
+			    SELECT APV_NO
+			    FROM APV_LINE
+			    WHERE APV_EMP_NO = #{apvEmpNo}
+			)
+		SELECT    C.APV_NO
+		        , C.EMP_NO
+		        , C.DOC_FORM_NO
+		        , C.APV_SJ
+		        , C.DRFT_DATE
+		        , D.APV_LINE_SEQ
+		        , D.APV_STTUS_CD
+		        , D.APV_SE_CD
+		        , D.APV_DATE
+		        , E.EMP_NM AS EMPNM
+                , E.PROFL_IMAGE_URL AS PROFLIMAGEURL
+		        , F.DEPT_NM AS DEPTNM
+		        , G.RSPNSBL_CTGRY_NM AS APVRSPNSBL
+		        , H.CMMN_CD_NM AS APVPOSITION
+		FROM APV C
+		INNER JOIN A
+		    ON A.APV_NO = C.APV_NO
+		INNER JOIN B
+		    ON B.APV_NO = C.APV_NO
+		INNER JOIN APV_LINE D
+		    ON D.APV_NO = C.APV_NO
+		INNER JOIN EMPLOYEE E
+		    ON E.EMP_NO = D.APV_EMP_NO
+		INNER JOIN DEPARTMENT F
+		    ON F.DEPT_NO = E.DEPT_NO
+		INNER JOIN RESPONSIBILITY_CATEGORY G
+		        ON G.RSPNSBL_CD = E.RSPNSBL_CD
+		INNER JOIN COMMON_CODE H
+		    ON H.CMMN_CD = E.POSITION_CD
+		    AND H.CMMN_CD_GROUP = 'EMP002'
+		ORDER BY C.APV_NO DESC, D.APV_LINE_SEQ ASC
+	</select>
+	
+	<!-- 결재 진행 조회 (본인) -->
+	<select id="getAllProgressMine" parameterType="String" resultType="apvVO">
+		WITH
+			A AS (
+			    SELECT *
+			    FROM (
+			        SELECT APV_NO
+			             , APV_SE_CD
+			             , APV_LINE_SEQ
+			             , APV_EMP_NO
+			             , APV_STTUS_CD
+			             , LISTAGG(APV_STTUS_CD, ',')
+			                WITHIN GROUP (ORDER BY APV_LINE_SEQ)
+			                OVER ( PARTITION BY APV_NO) AS STR
+			        FROM APV_LINE
+			    )
+			    WHERE APV_SE_CD = '3'
+			    AND APV_STTUS_CD = '0'
+			    AND STR NOT LIKE '%N%'
+			    AND STR LIKE 'Y%'
+			)
+        SELECT 
+                   B.APV_NO
+                 , B.EMP_NO
+                 , B.DOC_FORM_NO
+                 , B.APV_SJ
+                 , B.DRFT_DATE
+        FROM APV B
+        INNER JOIN A
+        ON A.APV_NO = B.APV_NO
+        WHERE B.EMP_NO = #{empNo}
+        ORDER BY B.DOC_FORM_NO, B.APV_NO DESC
+	</select>
+	
+	<!-- 결재 완료 목록 조회 (메인) -->
+	<select id="getCompletedOfMine" resultType="apvVO" parameterType="String">
+		WITH
+			A AS (
+			    SELECT APV_NO, APV_DATE
+			    FROM APV_LINE
+			    WHERE APV_SE_CD = 3
+			    AND APV_STTUS_CD = 'Y' 
+			),
+			B AS (
+			    SELECT APV_NO
+			    FROM APV_LINE
+			    WHERE APV_EMP_NO = #{apvEmpNo}
+			)
+		SELECT 
+		    C.*,
+		    A.APV_DATE AS apvDate
+		FROM APV C
+		INNER JOIN A ON A.APV_NO = C.APV_NO
+		INNER JOIN B ON B.APV_NO = C.APV_NO
+		WHERE C.EMP_NO = #{empNo}
+		ORDER BY A.APV_DATE DESC
+
+	</select>	
+	
+	<!-- 재기안 -->
+	<select id="getDraft" parameterType="HashMap" resultType="apvVO">
+		WITH
+		A AS (
+		      SELECT A.*
+		            FROM APV A
+		            INNER JOIN APV_LINE B
+		            ON A.APV_NO = B.APV_NO
+		            WHERE B.APV_SE_CD = '1' AND B.APV_STTUS_CD = 'N'
+		)
+		SELECT B.*
+		FROM APV B
+		WHERE B.APV_NO = #{apvNo} AND B.EMP_NO = #{empNo}
+	</select>
+	
+	<!-- 기안 상신 등록 -->
+	<insert id="create" parameterType="apvVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="apvNo">
+			SELECT SEQ_APV_NO.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO APV 
+		(
+			 APV_NO          <!-- 결재번호 -->
+		   , EMP_NO          <!-- 작성자사번 -->
+		   , DOC_FORM_NO     <!-- 문서양식번호 -->
+		   , STTUS_CD        <!-- 상태코드 -->
+		   , APV_SJ          <!-- 결재 제목 -->
+		   , APV_CN          <!-- 결재 내용 -->
+		   , APV_ETC         <!-- 결재 기타 -->
+		   , DRFT_DATE       <!-- 기안 일자 -->
+		   , ATCHMNFL_NO     <!-- 첨부파일번호 -->
+		   , TMPR_STRE_YN_CD <!-- 임시저장여부코드 -->
+        )
+		VALUES
+		(
+			#{apvNo}
+		  , #{empNo}
+		  , #{docFormNo}
+		  , #{sttusCd}
+		  , #{apvSj}
+		  , #{apvCn}
+		  , #{apvEtc}
+		  , SYSDATE
+		  , #{atchmnflNo}
+		  , #{tmprStreYnCd}
+		)
+	</insert>
+	
+	<!-- 결재라인 등록 -->
+	<insert id="createApvLine" parameterType="java.util.List">
+		<selectKey resultType="int" order="BEFORE" keyProperty="apvNo">
+			SELECT SEQ_APV_NO.CURRVAL FROM DUAL
+		</selectKey>
+		<foreach collection="list" item="e" index="i" separator=" " open="INSERT ALL" close="SELECT * FROM DUAL">
+			INTO APV_LINE
+			(
+				 APV_NO        <!-- 결재번호 -->
+			   , APV_EMP_NO    <!-- 결재자 사번 -->
+			   , APV_SE_CD     <!-- 결재구분코드 -->
+			   , APV_STTUS_CD  <!-- 결재상태코드 -->
+			   , APV_LINE_SEQ  <!-- 결재라인순서 -->
+			   , APV_DATE      <!-- 기안날짜 -->
+	        )
+			VALUES
+			(
+				#{apvNo}
+			  , #{e.apvEmpNo}
+			  , #{e.apvSeCd}
+			  , #{e.apvSttusCd}
+			  , #{e.apvLineSeq}
+			  , SYSDATE
+			)
+		</foreach>
+	</insert>
+	
+	<!-- 참조자 등록 -->
+	<insert id="createRefer" parameterType="java.util.List">
+		<selectKey resultType="int" order="BEFORE" keyProperty="apvNo">
+			SELECT SEQ_APV_NO.CURRVAL FROM DUAL
+		</selectKey>
+		<foreach collection="list" item="e" index="i" separator=" " open="INSERT ALL" close="SELECT * FROM DUAL">
+			INTO APV_REFER
+			(
+				 APV_NO
+			   , EMP_NO
+	        )
+			VALUES
+			(
+				#{apvNo}
+			  , #{e.empNo}
+			)
+		</foreach>
+	</insert>
+	
+	<!-- 결재라인 구분코드 조회 -->
+	<select id="getCommonCode" resultType="comCodeVO">
+		SELECT A.*
+		FROM COMMON_CODE A
+		JOIN COMMON_CODE_GROUP B
+		ON A.CMMN_CD_GROUP = B.CMMN_CD_GROUP
+		WHERE A.CMMN_CD_GROUP = 'APPRVR002'
+	</select>
+	
+	<!-- 결재라인 조회 -->
+	<select id="getApvLine" parameterType="int" resultType="apvLineVO">
+		SELECT   APV_NO
+		  	   , APV_EMP_NO
+		  	   , REAL_APV_EMP_NO
+		  	   , APV_DATE
+		  	   , APV_SE_CD
+		  	   , APV_STTUS_CD
+		  	   , APV_OPINION
+		  	   , APV_STMP_URL
+		  	   , APV_POSITION
+		  	   , APV_RSPNSBL
+		  	   , APV_LINE_SEQ
+		FROM APV_LINE
+		WHERE APV_NO = #{apvNo}
+		ORDER BY APV_LINE_SEQ ASC
+	</select>
+	
+	<!-- 기안 정보 상세  -->
+	<select id="approvalDetailView1" parameterType="int" resultType="apvVO">
+		SELECT   A.APV_NO
+               , A.EMP_NO
+               , A.DOC_FORM_NO
+               , A.STTUS_CD
+               , A.APV_SJ
+               , A.APV_CN
+               , A.APV_ETC
+               , A.DRFT_DATE
+               , A.ATCHMNFL_NO
+               , B.ATCHMNFL_SEQ
+               , B.ATCHMNFL_NM
+               , B.ATCHMNFL_ORIGIN_NM
+               , B.ATCHMNFL_SIZE
+		FROM APV A
+        LEFT JOIN ATTACHED_FILE B
+        ON A.ATCHMNFL_NO = B.ATCHMNFL_NO
+		WHERE APV_NO = #{apvNo}
+	</select>
+	
+	<!-- 결재에 따른 결재 정보 상세 (결재라인) -->
+	<select id="approvalDetailView2" parameterType="int" resultType="apvLineVO">
+		SELECT 
+			    A.*,
+			    (SELECT EMP_NM 
+			     FROM EMPLOYEE 
+			     WHERE EMP_NO = A.APV_EMP_NO) AS EMP_NM,
+			     
+			    (SELECT SIGN_IMAGE_URL 
+			     FROM EMPLOYEE 
+			     WHERE EMP_NO = A.APV_EMP_NO) AS SIGN_IMAGE_URL,
+			     
+			    (SELECT DEPT_NM 
+			     FROM DEPARTMENT 
+			     WHERE DEPT_NO = (SELECT DEPT_NO 
+			                      FROM EMPLOYEE 
+			                      WHERE EMP_NO = A.APV_EMP_NO)) AS DEPTNM,
+			                      
+			    (SELECT RSPNSBL_CTGRY_NM 
+			     FROM RESPONSIBILITY_CATEGORY 
+			     WHERE RSPNSBL_CD = (SELECT RSPNSBL_CD 
+			                         FROM EMPLOYEE 
+			                         WHERE EMP_NO = A.APV_EMP_NO)) AS APVRSPNSBL,
+			                         
+			    (SELECT CMMN_CD_NM 
+			     FROM COMMON_CODE 
+			     WHERE CMMN_CD = (SELECT POSITION_CD 
+			                      FROM EMPLOYEE 
+			                      WHERE EMP_NO = A.APV_EMP_NO) 
+			     AND CMMN_CD_GROUP = 'EMP002') AS APVPOSITION
+		FROM APV_LINE A
+		WHERE A.APV_NO = #{apvNo}
+		ORDER BY A.APV_LINE_SEQ
+	</select>
+	
+	<!-- 결재에 따른 결재 정보 상세 (참조인) -->
+	<select id="approvalDetailView3" parameterType="int" resultType="apvReferVO">
+		SELECT
+			    A.*,
+			    (SELECT EMP_NM
+			     FROM EMPLOYEE
+			     WHERE EMP_NO = A.EMP_NO) AS EMP_NM,
+
+			    (SELECT DEPT_NM
+			     FROM DEPARTMENT
+			     WHERE DEPT_NO = (SELECT DEPT_NO
+			                      FROM EMPLOYEE
+			                      WHERE EMP_NO = A.EMP_NO)) AS DEPTNM,
+
+			    (SELECT RSPNSBL_CTGRY_NM
+			     FROM RESPONSIBILITY_CATEGORY
+			     WHERE RSPNSBL_CD = (SELECT RSPNSBL_CD
+			                         FROM EMPLOYEE
+			                         WHERE EMP_NO = A.EMP_NO)) AS APVRSPNSBL,
+
+			    (SELECT CMMN_CD_NM
+			     FROM COMMON_CODE
+			     WHERE CMMN_CD = (SELECT POSITION_CD
+			                      FROM EMPLOYEE
+			                      WHERE EMP_NO = A.EMP_NO)
+			     AND CMMN_CD_GROUP = 'EMP002') AS APVPOSITION
+		FROM APV_REFER A
+		WHERE A.APV_NO = #{apvNo}
+		ORDER BY A.EMP_NO
+	</select>
+	
+	<!-- 결재 (승인) -->	
+	<update id="approval" parameterType="hashMap">
+		UPDATE APV_LINE
+		SET APV_STTUS_CD = 'Y'
+		WHERE APV_NO = #{apvNo} AND APV_LINE_SEQ = #{apvLineSeq}
+	</update>
+	
+	<!-- 반려 -->	
+	<update id="refuse" parameterType="hashMap">
+		UPDATE APV_LINE
+		SET APV_STTUS_CD = 'N'
+		WHERE APV_NO = #{apvNo} AND APV_SE_CD = #{apvSeCd}
+	</update>
+	
+	<!-- 반려(상위 결재문서 상태 업데이트) -->
+	<update id="updateApvRefuse" parameterType="int">
+		UPDATE APV
+		SET STTUS_CD = 'N', REFUSE_DATE = SYSDATE
+		WHERE APV_NO = #{apvNo}
+	</update>
+	
+	<!-- 회수 -->
+	<update id="docReturn" parameterType="apvLineVO">
+		UPDATE APV_LINE
+		SET APV_STTUS_CD = 'N'
+		WHERE APV_NO = #{apvNo} AND APV_EMP_NO = #{apvEmpNo}
+	</update>
+	
+	<!-- 회수 문서  삭제 -->
+	<delete id="deleteDraft" parameterType="HashMap">
+		DELETE APV
+		WHERE APV_NO = #{apvNo} AND EMP_NO = #{empNo}
+	</delete>
+	
+	<!-- 결재 대기 목록 개수 -->
+	<select id="getPendingCnt" resultType="int" parameterType="String">
+       WITH A AS (
+		    SELECT APV_NO
+		    FROM (
+		        SELECT APV_NO
+		             , APV_EMP_NO
+		             , APV_STTUS_CD
+		             , LAG(APV_STTUS_CD, 1) OVER(PARTITION BY APV_NO ORDER BY APV_NO, APV_LINE_SEQ) AS PRE_APV_STTUS_CD 
+		        FROM APV_LINE
+		    )
+		    WHERE APV_EMP_NO = #{apvEmpNo}
+		    AND PRE_APV_STTUS_CD = 'Y'
+		    AND APV_STTUS_CD = '0'
+		)
+		SELECT 
+		    COUNT(*) AS CNT
+		FROM APV B
+		INNER JOIN A ON A.APV_NO = B.APV_NO
+	</select>
+
+	<!-- 결재 대기 목록 조회 -->
+	<select id="getPending" resultType="apvVO" parameterType="HashMap">
+	    WITH A AS (
+	       SELECT APV_NO
+	       FROM (
+	           SELECT APV_NO
+	                , APV_EMP_NO
+	                , APV_STTUS_CD
+	                , LAG(APV_STTUS_CD, 1) OVER(PARTITION BY APV_NO ORDER BY APV_NO, APV_LINE_SEQ) AS PRE_APV_STTUS_CD
+	           FROM APV_LINE
+	       )
+	       WHERE APV_EMP_NO  = #{apvEmpNo}
+	       AND PRE_APV_STTUS_CD = 'Y'
+	       AND APV_STTUS_CD = '0'
+	   )
+	   SELECT Z.*
+       FROM (
+            SELECT ROW_NUMBER() OVER(ORDER BY C.DRFT_DATE DESC) AS NUM
+            	 , C.*
+			     , D.EMP_NM AS EMPNM
+		         , E.DEPT_NM AS DEPTNM
+		         , F.RSPNSBL_CTGRY_NM AS APVRSPNSBL
+		         , G.CMMN_CD_NM AS APVPOSITION
+        FROM APV C
+	    INNER JOIN A
+            ON A.APV_NO = C.APV_NO
+        INNER JOIN EMPLOYEE D
+		        ON D.EMP_NO = C.EMP_NO
+        INNER JOIN DEPARTMENT E
+		        ON E.DEPT_NO = D.DEPT_NO
+        INNER JOIN RESPONSIBILITY_CATEGORY F
+		        ON F.RSPNSBL_CD = D.RSPNSBL_CD
+        INNER JOIN COMMON_CODE G
+		        ON G.CMMN_CD = D.POSITION_CD
+        AND G.CMMN_CD_GROUP = 'EMP002' 
+        <where>
+	    	<if test='"1".equals(SEARCH_TYPE)'>
+	    		C.APV_SJ like '%' || #{SEARCH_VALUE} || '%'
+	    	</if>
+	    	<if test='"2".equals(SEARCH_TYPE)'>
+	    		D.EMP_NM like '%' || #{SEARCH_VALUE} || '%'
+	    	</if>
+		</where>
+       ) Z
+       WHERE Z.NUM BETWEEN (#{PAGE}-1) * #{ROWSIZE} +1 AND (#{PAGE} * #{ROWSIZE})
+       
+	</select>
+		
+	<!-- 결재 대기 목록 조회 -->	
+	<select id="getPendingOfMine" resultType="apvVO" parameterType="String">
+	    WITH 
+        A AS (
+	       SELECT APV_NO
+	       FROM (
+	           SELECT APV_NO
+	                , APV_EMP_NO
+	                , APV_STTUS_CD
+	                , LAG(APV_STTUS_CD, 1) OVER(PARTITION BY APV_NO ORDER BY APV_NO, APV_LINE_SEQ) AS PRE_APV_STTUS_CD
+	           FROM APV_LINE
+	       )
+	       WHERE APV_EMP_NO  = #{apvEmpNo}
+	       AND PRE_APV_STTUS_CD = 'Y'
+	       AND APV_STTUS_CD = '0'
+	   )
+      SELECT 
+            	 C.APV_NO
+                 , C.DOC_FORM_NO
+                 , C.APV_SJ
+                 , C.DRFT_DATE
+			     , D.EMP_NM AS EMPNM
+		         , E.DEPT_NM AS DEPTNM
+		         , F.RSPNSBL_CTGRY_NM AS APVRSPNSBL
+		         , G.CMMN_CD_NM AS APVPOSITION
+        FROM APV C
+	    INNER JOIN A
+            ON A.APV_NO = C.APV_NO
+        INNER JOIN EMPLOYEE D
+		        ON D.EMP_NO = C.EMP_NO
+        INNER JOIN DEPARTMENT E
+		        ON E.DEPT_NO = D.DEPT_NO
+        INNER JOIN RESPONSIBILITY_CATEGORY F
+		        ON F.RSPNSBL_CD = D.RSPNSBL_CD
+        INNER JOIN COMMON_CODE G
+		        ON G.CMMN_CD = D.POSITION_CD
+        AND G.CMMN_CD_GROUP = 'EMP002'
+        ORDER BY C.DRFT_DATE
+	</select>
+		
+	<!-- 결재 진행 목록 개수 -->
+	<select id="getProgressCnt" resultType="int" parameterType="String">
+		WITH
+		A AS (
+		    SELECT *
+		    FROM (
+		        SELECT APV_NO
+		             , APV_SE_CD
+		             , APV_LINE_SEQ
+		             , APV_EMP_NO
+		             , APV_STTUS_CD
+		             , LISTAGG(APV_STTUS_CD, ',')
+		                WITHIN GROUP (ORDER BY APV_LINE_SEQ)
+		                OVER ( PARTITION BY APV_NO) AS STR
+		        FROM APV_LINE
+		    )
+		    WHERE APV_SE_CD = '3'
+		    AND APV_STTUS_CD = '0'
+		    AND STR NOT LIKE '%N%'
+		    AND STR LIKE 'Y%'
+		),
+		B AS (
+		    SELECT APV_NO
+		    FROM APV_LINE
+		    WHERE APV_EMP_NO = #{apvEmpNo}
+		)
+		
+		SELECT COUNT(*) CNT
+		FROM (
+		    SELECT C.*
+		    FROM APV C
+		    INNER JOIN A
+		        ON A.APV_NO = C.APV_NO
+		    INNER JOIN B
+		        ON B.APV_NO = C.APV_NO
+		)
+	</select>
+	
+	<!-- 결재 진행 목록 조회 -->
+	<select id="getProgress" resultType="apvVO" parameterType="HashMap">
+		WITH
+		A AS (
+		    SELECT *
+		    FROM (
+		        SELECT APV_NO
+		             , APV_SE_CD
+		             , APV_LINE_SEQ
+		             , APV_EMP_NO
+		             , APV_STTUS_CD
+		             , LISTAGG(APV_STTUS_CD, ',')
+		                WITHIN GROUP (ORDER BY APV_LINE_SEQ)
+		                OVER ( PARTITION BY APV_NO) AS STR
+		        FROM APV_LINE
+		    )
+		    WHERE APV_SE_CD = '3'
+		    AND APV_STTUS_CD = '0'
+		    AND STR NOT LIKE '%N%'
+		    AND STR LIKE 'Y%'
+		),
+		B AS (
+		    SELECT APV_NO
+		    FROM APV_LINE
+		    WHERE APV_EMP_NO = #{apvEmpNo}
+		)
+		
+		SELECT Z.*
+		FROM (
+			SELECT ROW_NUMBER() OVER(ORDER BY C.DRFT_DATE DESC) AS NUM
+			     , C.*
+			     , D.EMP_NM AS EMPNM
+		         , E.DEPT_NM AS DEPTNM
+		         , F.RSPNSBL_CTGRY_NM AS APVRSPNSBL
+		         , G.CMMN_CD_NM AS APVPOSITION
+			FROM APV C
+			INNER JOIN A
+			    ON A.APV_NO = C.APV_NO
+			INNER JOIN B
+			    ON B.APV_NO = C.APV_NO
+			INNER JOIN EMPLOYEE D
+		        ON D.EMP_NO = C.EMP_NO
+		    INNER JOIN DEPARTMENT E
+		        ON E.DEPT_NO = D.DEPT_NO
+		    INNER JOIN RESPONSIBILITY_CATEGORY F
+		        ON F.RSPNSBL_CD = D.RSPNSBL_CD
+		    INNER JOIN COMMON_CODE G
+		        ON G.CMMN_CD = D.POSITION_CD
+		        AND G.CMMN_CD_GROUP = 'EMP002'
+		    <where>
+		    	<if test='"1".equals(SEARCH_TYPE)'>
+		    		C.APV_SJ like '%' || #{SEARCH_VALUE} || '%'
+		    	</if>
+		    	<if test='"2".equals(SEARCH_TYPE)'>
+		    		D.EMP_NM like '%' || #{SEARCH_VALUE} || '%'
+		    	</if>
+		    </where>
+		) Z
+		WHERE Z.NUM BETWEEN (#{PAGE}-1) * #{ROWSIZE} +1 AND (#{PAGE} * #{ROWSIZE})
+	</select>
+
+	<!-- 결재 완료 목록 갯수  -->
+	<select id="getCompletedCnt" resultType="int" parameterType="String">
+		WITH
+			A AS (
+			    SELECT APV_NO, APV_DATE
+			    FROM APV_LINE
+			    WHERE APV_SE_CD = 3
+			    AND APV_STTUS_CD = 'Y'  
+			),
+			B AS (
+			    SELECT APV_NO
+			    FROM APV_LINE
+			    WHERE APV_EMP_NO = #{apvEmpNo}
+			)
+		SELECT COUNT(*) CNT
+        
+		FROM APV C
+		JOIN A ON A.APV_NO = C.APV_NO
+		JOIN B ON B.APV_NO = C.APV_NO
+	</select>
+	
+	<!-- 결재 완료 목록 조회 -->
+	<select id="getCompleted" resultType="apvVO" parameterType="HashMap">
+		WITH
+			A AS (
+			    SELECT APV_NO, APV_DATE
+			    FROM APV_LINE
+			    WHERE APV_SE_CD = 3
+			    AND APV_STTUS_CD = 'Y'
+			),
+			B AS (
+			    SELECT APV_NO
+			    FROM APV_LINE
+			    WHERE APV_EMP_NO = #{apvEmpNo}
+			)
+		SELECT Z.*
+        FROM (
+            SELECT ROW_NUMBER() OVER(ORDER BY C.DRFT_DATE DESC) AS NUM
+                , A.APV_DATE AS APV_DATE
+                , C.*
+                , D.EMP_NM AS EMPNM
+                , E.DEPT_NM AS DEPTNM
+                , F.RSPNSBL_CTGRY_NM AS APVRSPNSBL
+                , G.CMMN_CD_NM AS APVPOSITION
+
+            FROM APV C
+            INNER JOIN A 
+                    ON A.APV_NO = C.APV_NO
+            INNER JOIN B
+                    ON B.APV_NO = C.APV_NO
+            INNER JOIN EMPLOYEE D
+                    ON D.EMP_NO = C.EMP_NO
+            INNER JOIN DEPARTMENT E
+                    ON E.DEPT_NO = D.DEPT_NO
+            INNER JOIN RESPONSIBILITY_CATEGORY F
+                    ON F.RSPNSBL_CD = D.RSPNSBL_CD
+            INNER JOIN COMMON_CODE G
+                    ON G.CMMN_CD = D.POSITION_CD
+            AND G.CMMN_CD_GROUP = 'EMP002'
+            
+            <where>
+		    	<if test='"1".equals(SEARCH_TYPE)'>
+		    		C.APV_SJ like '%' || #{SEARCH_VALUE} || '%'
+		    	</if>
+		    	<if test='"2".equals(SEARCH_TYPE)'>
+		    		D.EMP_NM like '%' || #{SEARCH_VALUE} || '%'
+		    	</if>
+		    </where>
+		    
+        ) Z
+        WHERE Z.NUM BETWEEN (#{PAGE}-1) * #{ROWSIZE} +1 AND (#{PAGE} * #{ROWSIZE})
+	</select>
+	
+	<!-- 반려 목록 갯수 -->
+	<select id="getRefusedCnt" parameterType="String" resultType="int">
+		SELECT COUNT(*) CNT
+		FROM APV
+		WHERE STTUS_CD = 'N' AND EMP_NO = #{empNo}
+	</select> 
+	
+	<!-- 반려 목록 조회 -->
+	<select id="getRefused" resultType="apvVO" parameterType="HashMap">
+		SELECT Z.*
+		FROM (  
+		    SELECT ROW_NUMBER() OVER(ORDER BY A.DRFT_DATE DESC) AS NUM
+		        , A.APV_NO
+		        , A.DOC_FORM_NO
+		        , A.APV_SJ
+		        , A.DRFT_DATE
+		        , A.REFUSE_DATE
+		        , B.EMP_NM
+		    FROM APV A
+		    INNER JOIN EMPLOYEE B ON A.EMP_NO = B.EMP_NO
+		    <where>
+		        AND A.STTUS_CD = 'N' 
+		        AND A.EMP_NO = #{empNo}
+		        <if test='"1".equals(SEARCH_TYPE)'>
+		            AND A.APV_SJ like '%' || #{SEARCH_VALUE} || '%'
+		        </if>
+		        <if test='"2".equals(SEARCH_TYPE)'>
+		            AND B.EMP_NM like '%' || #{SEARCH_VALUE} || '%'
+		        </if>
+		    </where>
+		) Z
+		WHERE Z.NUM BETWEEN (#{PAGE}-1) * #{ROWSIZE} +1 AND (#{PAGE} * #{ROWSIZE})
+	</select>
+	
+	<!-- 회수 목록 갯수 -->
+	<select id="getDocReturnCnt" parameterType="String" resultType="int">
+		SELECT COUNT(*) CNT
+		FROM APV A
+		INNER JOIN APV_LINE B ON A.APV_NO = B.APV_NO
+		WHERE 
+		    A.EMP_NO = #{empNo}
+		AND 
+			B.APV_SE_CD = 1
+		AND 
+			B.APV_STTUS_CD = 'N'
+	</select>
+	
+	<!-- 회수 목록 조회 -->
+	<select id="getDocReturn" resultType="apvVO" parameterType="HashMap">
+		SELECT Z.* 
+		FROM (
+		    SELECT ROW_NUMBER() OVER(ORDER BY A.DRFT_DATE ASC) AS NUM
+		        , A.APV_NO
+		        , A.DOC_FORM_NO
+		        , A.APV_SJ
+		        , A.DRFT_DATE
+		        , C.EMP_NM
+		    FROM APV A
+		    INNER JOIN APV_LINE B ON A.APV_NO = B.APV_NO
+		    INNER JOIN EMPLOYEE C ON C.EMP_NO = A.EMP_NO
+		    WHERE 
+		            A.EMP_NO = #{empNo}
+		    AND 
+		            B.APV_SE_CD = 1
+		    AND 
+		            B.APV_STTUS_CD = 'N'
+		    <if test='"1".equals(SEARCH_TYPE)'>
+		        AND A.APV_SJ like '%' || #{SEARCH_VALUE} || '%'
+		    </if>
+		    <if test='"2".equals(SEARCH_TYPE)'>
+		        AND B.EMP_NM like '%' || #{SEARCH_VALUE} || '%'
+		    </if>
+		) Z
+		WHERE Z.NUM BETWEEN (#{PAGE}-1) * #{ROWSIZE} +1 AND (#{PAGE} * #{ROWSIZE})
+
+	</select>
+	
+	<!-- 임시저장함 목록 갯수 -->
+	<select id="getTempCnt" parameterType="String" resultType="int">
+		SELECT COUNT(*) CNT
+	    FROM APV A
+	    WHERE A.TMPR_STRE_YN_CD = 'Y' 
+		AND A.EMP_NO = #{empNo}
+	</select>
+	
+	<!-- 임시저장함 목록 -->
+	<select id="getTemp" resultType="apvVO" parameterType="HashMap">
+		SELECT Z.*
+		FROM (
+		    SELECT  ROW_NUMBER() OVER(ORDER BY A.DRFT_DATE ASC) AS NUM 
+		               , A.APV_NO
+		               , A.EMP_NO
+		               , A.DOC_FORM_NO
+		               , A.APV_SJ
+		               , A.DRFT_DATE
+		               , A.TMPR_STRE_YN_CD
+                       , B.EMP_NM
+		    FROM APV A
+	        INNER JOIN EMPLOYEE B ON B.EMP_NO = A.EMP_NO
+		    WHERE 
+                   A.TMPR_STRE_YN_CD = 'Y' 
+		    AND 
+                   A.EMP_NO = #{empNo}
+            <if test='"1".equals(SEARCH_TYPE)'>
+		        AND A.APV_SJ like '%' || #{SEARCH_VALUE} || '%'
+		    </if>
+		    <if test='"2".equals(SEARCH_TYPE)'>
+		        AND B.EMP_NM like '%' || #{SEARCH_VALUE} || '%'
+		    </if>
+		
+		) Z
+		WHERE Z.NUM BETWEEN (#{PAGE}-1) * #{ROWSIZE} +1 AND (#{PAGE} * #{ROWSIZE})
+	</select>
+	
+	<!-- 부서문서함 목록 갯수 -->
+	<select id="getDeptApvCnt" parameterType="String" resultType="int">
+		SELECT COUNT(*) CNT
+	    FROM APV A
+	    INNER JOIN APV_LINE B
+	    ON A.APV_NO = B.APV_NO
+	    WHERE B.APV_SE_CD = 3 AND APV_STTUS_CD = 'Y'
+	</select>
+	
+	<!-- 부서문서함 -->
+	<select id="getDeptApv" resultType="apvVO" parameterType="HashMap">
+	    WITH A AS (
+	        SELECT A.*, B.APV_DATE 
+	        FROM APV A
+	        INNER JOIN APV_LINE B
+	        ON A.APV_NO = B.APV_NO
+	        WHERE B.APV_SE_CD = '3' AND APV_STTUS_CD = 'Y'
+	    ),
+	    B AS (
+	        SELECT D.DEPT_NO
+	        FROM EMPLOYEE D
+	        <if test="empNo!='2018001'">
+	        	WHERE D.EMP_NO = #{empNo}
+	        </if>
+	    )
+	    SELECT Z.*
+	    FROM (
+	        SELECT
+	            ROW_NUMBER() OVER(ORDER BY A.APV_DATE DESC) AS NUM
+	            , A.APV_DATE
+	            , C.APV_NO
+	            , C.EMP_NO
+	            , C.DOC_FORM_NO
+	            , C.APV_SJ
+	            , C.DRFT_DATE
+	            , D.EMP_NM AS EMPNM
+	            , E.DEPT_NM AS DEPTNM
+	            , F.RSPNSBL_CTGRY_NM AS APVRSPNSBL
+	            , G.CMMN_CD_NM AS APVPOSITION
+	        FROM 
+	            APV C
+	        INNER JOIN 
+	            A ON A.APV_NO = C.APV_NO
+	        INNER JOIN 
+	            EMPLOYEE D ON D.EMP_NO = C.EMP_NO
+	        INNER JOIN 
+	            DEPARTMENT E ON E.DEPT_NO = D.DEPT_NO
+	        INNER JOIN 
+	            RESPONSIBILITY_CATEGORY F ON F.RSPNSBL_CD = D.RSPNSBL_CD
+	        INNER JOIN 
+	            COMMON_CODE G ON G.CMMN_CD = D.POSITION_CD
+	        INNER JOIN 
+	            B ON B.DEPT_NO = E.DEPT_NO
+	        AND 
+	            G.CMMN_CD_GROUP = 'EMP002'
+	            
+	        <where>
+	            <if test='"1".equals(SEARCH_TYPE)'>
+	                C.APV_SJ like '%' || #{SEARCH_VALUE} || '%'
+	            </if>
+	            <if test='"2".equals(SEARCH_TYPE)'>
+	                D.EMP_NM like '%' || #{SEARCH_VALUE} || '%'
+	            </if>
+	        </where>    
+	    ) Z
+	    WHERE Z.NUM BETWEEN (#{PAGE}-1) * #{ROWSIZE} +1 AND (#{PAGE} * #{ROWSIZE})
+	</select>
+	
+	<!-- 즐겨찾기 저장 -->
+	<insert id="createBkmk" parameterType="Hashmap">
+		<selectKey resultType="int" order="BEFORE" keyProperty="bkmkNo">
+			SELECT NVL(SEQ_BKMK_NO.NEXTVAL,0) FROM DUAL
+		</selectKey>
+		INSERT INTO APV_LINE_BKMK
+		(
+			 BKMK_NO
+		   , EMP_NO 
+		   , BKMK_NM
+		)
+		VALUES
+		(
+		   	#{bkmkNo}
+		  , #{empNo}
+		  , #{bkmkNm}
+		)
+	</insert>
+	
+	<!-- 즐겨찾기 상세 저장 -->
+	<insert id="createBkmkDetail" parameterType="Hashmap">
+		<foreach collection="bkmkDetail" item="e" index="i" separator=" " open="INSERT ALL" close="SELECT * FROM DUAL">
+			INTO APV_LINE_BKMK_DETAIL
+			(
+				EMP_NO
+			  , BKMK_NO
+			  , APV_LINE_SEQ
+			  , APV_SE_CD
+			)
+			VALUES
+			(
+			   	#{e.empNo}
+			  , #{bkmkNo}
+			  , #{i}
+			  , #{e.apvSeCd}
+			)
+		</foreach>
+	</insert>
+	
+	<!-- 즐겨찾기 목록 조회 -->
+	<select id="getBkmkList" resultType="apvBkmkVO" parameterType="HashMap">
+		SELECT  BKMK_NO
+			  , BKMK_NM
+		FROM    APV_LINE_BKMK
+		WHERE   EMP_NO = #{empNo}
+		ORDER   BY BKMK_NO ASC
+	</select>
+	
+	<!-- 즐겨찾기 상세 조회 -->
+	<select id="getBkmkDetail" resultType="apvBkmkVO">
+		SELECT
+		        A.BKMK_NO
+		      , BKMK_NM
+              , A.APV_LINE_SEQ
+		      , A.APV_SE_CD
+		      , B.EMP_NM
+		      , B.EMP_NO
+		      , C.DEPT_NM
+		      , E.RSPNSBL_CTGRY_NM
+		      , F.CMMN_CD_NM
+		FROM
+		      APV_LINE_BKMK_DETAIL A
+		INNER JOIN
+			  EMPLOYEE B ON A.EMP_NO = B.EMP_NO
+		INNER JOIN 
+			  DEPARTMENT C ON B.DEPT_NO = C.DEPT_NO
+		INNER JOIN
+			  APV_LINE_BKMK D ON A.BKMK_NO = D.BKMK_NO
+		INNER JOIN
+			  RESPONSIBILITY_CATEGORY E ON B.RSPNSBL_CD = E.RSPNSBL_CD
+		INNER JOIN
+			  COMMON_CODE F ON B.POSITION_CD = F.CMMN_CD
+		WHERE
+			  D.BKMK_NO = #{bkmkNo}
+		AND   
+			  F.CMMN_CD_GROUP = 'EMP002' <!-- 직급명 코드 -->
+	</select>
+
+	<!-- 즐겨찾기 삭제 -->
+	<delete id="deleteBkmk" parameterType="int">
+		DELETE FROM APV_LINE_BKMK
+		WHERE BKMK_NO = #{bkmkNo}
+	</delete>
+	
+	<!-- 즐겨찾기 수정 -->
+	<update id="updateBkmk" parameterType="apvLineBkmkVO">
+		UPDATE
+				APV_LINE_BKMK
+		   SET
+				BKMK_NM = #{bkmkNm}
+		 WHERE
+				BKMK_NO = #{bkmkNo}
+	</update>
+	
+	<!-- 파일 첨부 -->
+	<insert id="createAttachedFile" parameterType="attachedFileVO">
+	    <selectKey resultType="String" order="BEFORE" keyProperty="atchmnflNo">
+	        SELECT SEQ_ATTEND.NEXTVAL FROM DUAL
+	    </selectKey>
+	
+	    INSERT INTO ATTACHED_FILE 
+	    (
+	          ATCHMNFL_NO
+	        , ATCHMNFL_SEQ
+	        , ATCHMNFL_NM
+	        , ATCHMNFL_ORIGIN_NM
+	        , ATCHMNFL_SIZE
+	        , ATCHMNFL_URL
+	    )
+	    VALUES
+	    (
+	         #{atchmnflNo}
+	       , #{atchmnflSeq}
+	       , #{atchmnflNm}
+	       , #{atchmnflOriginNm}
+	       , #{atchmnflSize}
+	       , #{atchmnflUrl}
+	    )
+	</insert>
+	
+	<!-- 직원 목록 조회 -->
+	<select id="getEmpList" resultType="hashMap">
+		SELECT A.EMP_NO
+		     , A.DEPT_NO
+		     , A.EMP_NM
+		     , A.POSITION_CD
+		     , A.RSPNSBL_CD
+		     , B.DEPT_NM
+		     , B.UPPER_DEPT
+		     , C.CMMN_CD_NM AS POSITION_NM
+		     , D.RSPNSBL_CTGRY_NM
+		FROM EMPLOYEE A
+		INNER JOIN DEPARTMENT B
+		    ON B.DEPT_NO = A.DEPT_NO
+		INNER JOIN COMMON_CODE C
+		    ON A.POSITION_CD = C.CMMN_CD
+		    AND C.CMMN_CD_GROUP = 'EMP002'
+		INNER JOIN RESPONSIBILITY_CATEGORY D
+		    ON A.RSPNSBL_CD = D.RSPNSBL_CD
+		START WITH B.UPPER_DEPT IS NULL
+		CONNECT BY PRIOR B.DEPT_NO = B.UPPER_DEPT
+		ORDER SIBLINGS BY B.DEPT_NO, A.POSITION_CD
+	</select>
+	
+	<!-- 서명등록 -->
+	<update id="signUpload" parameterType="empVO">
+		UPDATE EMPLOYEE
+		SET SIGN_IMAGE_URL = #{signImageUrl}
+		WHERE EMP_NO = #{empNo}
+	</update>
+	
+	<select id="getSign" parameterType="empVO" resultType="empVO">
+		select SIGN_IMAGE_URL
+		from EMPLOYEE
+		where emp_no = #{empNo}
+	</select>
+
+</mapper>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>workforest</title>
+    <link rel="icon" href="../img/favicon.png">
+    <link rel="stylesheet" href="../css/common.css">
+    <script src="../js/jquery-3.7.0.min.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/37.0.1/classic/ckeditor.js"></script>
+    <script src="../js/stripe-gradient.js"></script>
+</head>
+
+<body>
+    <canvas id="gradient"></canvas>
+
+    <div class="main-container">
+        <header class="custom">
+            <a href="javascript:void(0)" class="logo">WORKFOREST</a>
+            <div class="search-bar">
+                <input type="text" placeholder="Search">
+            </div>
+            <p class="header-txt">김대덕님, 오늘도 힘차게 화이팅하세요!</p>
+            <ul class="wf-util">
+                <li>
+                    <a href="javascript:void(0)" title="채팅">
+                        <i class="xi-wechat"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" title="알림">
+                        <i class="xi-bell"></i>
+                    </a>
+                    <div class="wf-menu-dropdown">
+                        <ul class="alarm-list">
+                            <li>
+                                <img src="/img/icon/avatar.png" class="user-img">
+                                <div>
+                                    <span class="tit">[일정등록]'주간회의' 일정이
+                                        등록되었습니다.</span>
+                                    <p>
+                                        <span class="date">2024-03-03 11:30</span>
+                                        <span class="employee">양연주 사장</span>
+                                    </p>
+                                </div>
+                            </li>
+                            <li>
+                                <img src="/img/icon/avatar.png" class="user-img">
+                                <div>
+                                    <span class="tit">[일정등록]'주간회의' 일정이
+                                        등록되었습니다.</span>
+                                    <p>
+                                        <span class="date">2024-03-03 11:30</span>
+                                        <span class="employee">양연주 사장</span>
+                                    </p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" title="설정">
+                        <i class="xi-cog"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" class="user-img-icon" title="사용자">
+                        <img src="/img/icon/avatar.png" class="user-img">
+                    </a>
+                    <div class="wf-menu-dropdown">
+                        <div class="wf-flex-box center">
+                            <img src="/img/icon/avatar.png" class="user-img">
+                            <div>
+                                <span class="user-info">연구개발본부 개발1팀</span>
+                                <span class="user-name">김대덕 사원</span>
+                            </div>
+                        </div>
+                        <div class="menu-wrap">
+                            <a href="#" class="menu-tit my-profile">내 프로필</a>
+                            <a href="#" class="menu-tit logout">로그아웃</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </header>
+        <div class="content-wrap">
+            <aside class="sidebar custom">
+                <div class="sidebar-user-info">
+                    <div class="img-box">
+                        <img src="/img/icon/avatar.png">
+                    </div>
+                    <span class="name">김대덕 사원</span>
+                    <span class="team">연구개발본부 개발팀</span>
+                </div>
+                <div id="leftside-navigation" class="leftside-navigation">
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>업무관리</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">업무</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">프로젝트</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)">
+                                <i class="xi-home"></i>
+                                <span>전자결재</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>예약/신청</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">회의실 예약</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">차량 예약</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">비품 대여</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>일정관리</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">일정</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">휴가</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)">
+                                <i class="xi-home"></i>
+                                <span>근태관리</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>게시판</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">공지사항</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">자유게시판</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">건의게시판</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)">
+                                <i class="xi-home"></i>
+                                <span>조직도</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="custom">
+                <div class="wf-main-container">
+                    <div class="wf-box-wrap">
+                        <div class="wf-box custom">
+                            <h1 class="wf-box-tit">출/퇴근</h1>
+                        </div>
+                        <div class="wf-box custom">
+                            <h1 class="wf-box-tit">프로젝트</h1>
+                        </div>
+                        <div class="wf-box custom">
+                            <h1 class="wf-box-tit">업무</h1>
+                        </div>
+                        <div class="wf-box custom">
+                            <h1 class="wf-box-tit">일정</h1>
+                        </div>
+                        <div class="wf-box custom">
+                            <h1 class="wf-box-tit">공지사항</h1>
+                        </div>
+                        <div class="wf-box custom">
+                            <h1 class="wf-box-tit">결재함</h1>
+                        </div>
+                        <div class="wf-box custom">
+                            <h1 class="wf-box-tit">예약 바로가기</h1>
+                        </div>
+
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>

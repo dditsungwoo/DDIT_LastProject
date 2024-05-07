@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.vacation.mapper.VacationMapper">
+
+	<!-- 내 휴가 목록 가져오기 -->
+	<select id="getMyVacationList" parameterType="empVacationManageVO" resultType="empVacationManageVO">
+		SELECT    
+			          M.EMP_NO			<!-- 사원 번호 -->
+			        , V.VCATN_CTGRY_NO	<!-- 휴가 번호 -->
+			        , V.VCATN_CTGRY_SJ	<!-- 휴가 제목 -->
+			        , V.VCATN_CTGRY_CN	<!-- 휴가 내용 -->
+			        , M.REMAIN_CNT		<!-- 남은 개수 -->
+		FROM 
+	        		EMP_VACATION_MANAGE M
+	    INNER JOIN 
+	    			VACATION_CATEGORY V ON M.VCATN_CTGRY_NO = V.VCATN_CTGRY_NO
+	    WHERE 
+	    			M.EMP_NO = #{empNo}
+	    AND
+	    			M.GIVE_YEAR = #{giveYear}
+	    ORDER BY 
+	    			V.VCATN_CTGRY_NO ASC
+	
+	</select>
+	
+	<!-- 내 특정 휴가 조회 -->
+	<select id="getMyVacation" parameterType="empVacationManageVO" resultType="empVacationManageVO">
+		SELECT    
+			          M.EMP_NO			<!-- 사원 번호 -->
+			        , V.VCATN_CTGRY_NO	<!-- 휴가 번호 -->
+			        , V.VCATN_CTGRY_SJ	<!-- 휴가 제목 -->
+			        , V.VCATN_CTGRY_CN	<!-- 휴가 내용 -->
+			        , M.REMAIN_CNT		<!-- 남은 개수 -->
+		FROM 
+	        		EMP_VACATION_MANAGE M
+	    INNER JOIN 
+	    			VACATION_CATEGORY V ON M.VCATN_CTGRY_NO = V.VCATN_CTGRY_NO
+	    WHERE 
+	    			M.EMP_NO = #{empNo}
+	    AND
+	    			M.GIVE_YEAR = #{giveYear}
+	    AND 	
+	    			V.VCATN_CTGRY_NO = #{vcatnCtgryNo}
+	</select>
+	
+	<!-- 결재 라인 불러오기 -->
+	<select id="getApvLine" parameterType="String" resultType="empVO">
+		SELECT 
+					  E.EMP_NO				<!-- 사원 번호 -->
+					, E.EMP_NM				<!-- 사원 이름 -->
+					, R.RSPNSBL_CTGRY_NM 	<!-- 직책명 -->
+		FROM 
+					EMPLOYEE E 
+		INNER JOIN 
+					RESPONSIBILITY_CATEGORY R ON E.RSPNSBL_CD = R.RSPNSBL_CD
+		WHERE 
+					EMP_NO = (SELECT SUPRR_EMP_NO FROM EMPLOYEE WHERE EMP_NO=#{empNo})
+	</select>
+	
+	<!-- 휴가 기록 가져오기 -->
+	<select id="getMyVacationRecordList" parameterType="vacationRecordVO" resultType="vacationRecordVO">
+		SELECT 
+	                  A.APV_NO			<!-- 결재 번호 -->
+	                , A.APV_STTUS_CD	<!-- 결재 상태(Y) -->
+					, R.VCATN_USE_DATE	<!-- 휴가 사용 일자 -->
+					, R.VCATN_CTGRY_NO	<!-- 휴가 종류 번호 -->
+					, R.VCATN_SE_CD		<!-- 휴가 구분 코드 -->
+					, R.VCATN_CN		<!-- 휴가 내용 -->
+		FROM 
+					VACATION_RECORD R
+        INNER JOIN 
+        			APV_LINE A ON R.APV_NO = A.APV_NO
+		WHERE 
+					R.EMP_NO= #{empNo} 
+		AND 
+					R.GIVE_YEAR = #{giveYear}
+		AND	
+					A.APV_SE_CD = '3'
+	</select>
+	
+	<!-- 종일 연차 카운트 -->
+	<select id="getAllDayVacationRecordsCount" parameterType="vacationRecordVO" resultType="int">
+		SELECT
+					COUNT(*) 
+		FROM 
+					VACATION_RECORD R 
+		INNER JOIN 
+                	APV_LINE A ON R.APV_NO = A.APV_NO       
+		WHERE 
+					R.VCATN_CTGRY_NO = '1' 
+		AND 
+					R.VCATN_SE_CD = '1' 
+		AND 
+					R.EMP_NO= #{empNo} 
+		AND 
+					R.VCATN_USE_DATE LIKE #{giveYear} || '%'
+		AND	
+                	A.APV_SE_CD = '3'
+        AND 
+                	A.APV_STTUS_CD = 'Y'
+	
+	</select>
+	
+	<!-- 반차 카운트 -->
+	<select id="getHalfDayVacationRecordsCount" parameterType="vacationRecordVO" resultType="int">
+		SELECT
+					COUNT(*) 
+		FROM 
+					VACATION_RECORD R 
+		INNER JOIN 
+                	APV_LINE A ON R.APV_NO = A.APV_NO       
+		WHERE 
+					R.VCATN_CTGRY_NO = '1' 
+		AND 
+					R.VCATN_SE_CD != '1' 
+		AND 
+					R.EMP_NO= #{empNo} 
+		AND 
+					R.VCATN_USE_DATE LIKE #{giveYear} || '%'
+		AND	
+                	A.APV_SE_CD = '3'
+        AND 
+                	A.APV_STTUS_CD = 'Y'	
+	</select>
+	
+	<!-- 결재 등록 -->
+	<insert id="createApvForVacation" parameterType="apvVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="apvNo">
+			SELECT SEQ_APV_NO.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO APV
+						(
+						  APV_NO          <!-- 결재번호 -->
+						, EMP_NO          <!-- 작성자사번 -->
+						, DOC_FORM_NO     <!-- 문서양식번호 -->
+						, STTUS_CD        <!-- 상태코드 -->
+						, APV_SJ          <!-- 결재 제목 -->
+						, APV_CN          <!-- 결재 내용 -->
+						, DRFT_DATE       <!-- 기안 일자 -->
+						, TMPR_STRE_YN_CD <!-- 임시저장여부코드 -->
+						)
+		VALUES
+						(
+						  #{apvNo}
+						, #{empNo}
+						, #{docFormNo}
+						, #{sttusCd}
+						, #{apvSj}
+						, #{apvCn}
+						, SYSDATE
+						, #{tmprStreYnCd}
+						)
+	</insert>
+	
+	<!-- 결재 라인 등록 -->
+	<insert id="createApvLineForVacation" parameterType="apvLineVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="apvNo">
+			SELECT SEQ_APV_NO.CURRVAL FROM DUAL
+		</selectKey>
+		INSERT INTO APV_LINE
+						(
+						  APV_NO        <!-- 결재번호 -->
+						, APV_EMP_NO    <!-- 결재자 사번 -->
+						, APV_SE_CD     <!-- 결재구분코드 -->
+						, APV_STTUS_CD  <!-- 결재상태코드 -->
+						, APV_LINE_SEQ  <!-- 결재라인순서 -->
+						, APV_DATE      <!-- 기안날짜 -->
+	        			)
+		VALUES
+						(
+						  #{apvNo}
+						, #{apvEmpNo}
+						, #{apvSeCd}
+						, #{apvSttusCd}
+						, #{apvLineSeq}
+						, SYSDATE
+						)
+	</insert>
+	
+	<!-- 휴가 등록 -->
+	<insert id="createVacation" parameterType="vacationRecordVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="apvNo">
+			SELECT SEQ_APV_NO.CURRVAL FROM DUAL
+		</selectKey>
+		INSERT INTO VACATION_RECORD 
+									(
+									  VCATN_USE_DATE	<!-- 휴가 사용 일자 -->
+									, EMP_NO			<!-- 사원 번호 -->
+									, VCATN_CTGRY_NO	<!-- 휴가 종류 번호 -->
+									, VCATN_SE_CD		<!-- 휴가 구분 코드 -->
+									, GIVE_YEAR			<!-- 지급 연도 -->
+									, VCATN_CN			<!-- 휴가 내용 -->
+									, APV_NO			<!-- 결재 번호 -->
+									)
+		VALUES 
+									(
+									  #{vcatnUseDate}
+									, #{empNo}
+									, #{vcatnCtgryNo}
+									, #{vcatnSeCd}
+									, #{giveYear}
+									, #{vcatnCn}
+									, #{apvNo}
+									)
+	</insert>
+	
+	<!-- 완료된 결재가 휴가인지 체크 -->
+	<select id="checkVcatnApvComplete" parameterType="int" resultType="int">
+			SELECT 
+						COUNT(*) 
+			FROM 
+						APV_LINE L
+	     	INNER JOIN 
+	     				APV A ON L.APV_NO = A.APV_NO
+	    	WHERE 
+	    				L.APV_SE_CD = '3'
+	    	AND 
+	    				L.APV_STTUS_CD = 'Y'
+			AND 
+	             		A.APV_SJ = '휴가 신청'
+			AND 		
+	             		L.APV_NO = #{apvNo}
+	</select>
+	
+	<!-- 완료된 결재의 휴가정보 가져오기 -->
+	<select id="getVcatn" parameterType="int" resultType="vacationRecordVO">
+		SELECT 		  
+					  EMP_NO
+					, VCATN_USE_DATE	<!-- 휴가 사용 일자 -->
+					, VCATN_CTGRY_NO	<!-- 휴가 종류 번호 -->
+					, VCATN_SE_CD		<!-- 휴가 구분 코드 -->
+					, GIVE_YEAR
+		FROM 
+					VACATION_RECORD
+		WHERE 
+					APV_NO= #{apvNo} 
+		ORDER BY 
+					VCATN_USE_DATE ASC	
+	</select>
+
+	<!-- 휴가 잔여수 업데이트 -->
+	<update id="updateVcatnCount">
+		UPDATE EMP_VACATION_MANAGE SET
+									REMAIN_CNT = REMAIN_CNT - #{remainCnt}
+		WHERE
+									GIVE_YEAR = #{giveYear}
+		AND
+									EMP_NO = #{empNo}
+		AND
+									VCATN_CTGRY_NO = #{vcatnCtgryNo}
+	</update>
+	
+	<!-- 출장 결재 완료 체크 -->
+	<select id="checkBusiTripApvComplete" parameterType="int" resultType="int">
+		SELECT 
+					COUNT(*) 
+		FROM 
+					APV_LINE L
+     	INNER JOIN 
+     				APV A ON L.APV_NO = A.APV_NO
+    	WHERE 
+    				L.APV_SE_CD = '3'
+    	AND 
+    				L.APV_STTUS_CD = 'Y'
+		AND 
+             		A.DOC_FORM_NO = '2'
+		AND 		
+             		L.APV_NO = #{apvNo}
+	</select>
+	
+	<!-- 휴가 삭제 -->
+	<delete id="deleteVacation" parameterType="int">
+		DELETE 
+				FROM VACATION_RECORD
+		WHERE
+				APV_NO = #{apvNo}
+	</delete>
+	
+	<!-- 휴가 잔여수 업데이트(복구) -->
+	<update id="updateVcatnCountBack" parameterType="empVacationManageVO">
+		UPDATE EMP_VACATION_MANAGE SET
+									REMAIN_CNT = REMAIN_CNT + #{remainCnt}
+		WHERE
+									GIVE_YEAR = #{giveYear}
+		AND
+									EMP_NO = #{empNo}
+		AND
+									VCATN_CTGRY_NO = #{vcatnCtgryNo}
+	</update>
+	
+	<!-- 결재 삭제 -->
+	<delete id="deleteApvForVacation" parameterType="int">
+		DELETE 
+    			FROM APV
+		WHERE 
+				APV_NO = #{apvNo}
+	</delete>
+	
+	<!-- 결재 삭제 -->
+	<insert id="createAttendance" parameterType="hashMap">
+		INSERT INTO ATTENDANCE_MANAGE
+									  (
+									  ATT_NO
+									  , EMP_NO
+									  , ATTEND_TIME
+									  , LVFFC_TIME
+									  , WORK_RESULT_CD
+									  , VCATN_SE_CD
+									  )
+		VALUES
+									  (
+									  SEQ_ATTEND.NEXTVAL
+									  , #{empNo}
+									  , TO_DATE(#{attendTime},'YYYY-MM-DD HH24:MI')
+									  , TO_DATE(#{lvffcTime},'YYYY-MM-DD HH24:MI')
+									  , '1'
+									  , '1'
+									  )
+	</insert>
+</mapper>

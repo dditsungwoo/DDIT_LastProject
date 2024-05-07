@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.common.mapper.CommonMapper">
+
+	<!-- 회원 정보 불러오기 -->
+    <select id="getEmpInfo" parameterType="String" resultType="empVO">
+    	SELECT 
+	    			E.EMP_NM					<!-- 사원 이름 -->
+	    			, E.PROFL_IMAGE_URL			<!-- 프로필 사진 URL -->
+	    			, D.DEPT_NM					<!-- 부서 이름 -->
+	    			, C.CMMN_CD_NM AS POSITION	<!-- 직급 -->
+	    			, R.RSPNSBL_CTGRY_NM		<!-- 직책 -->
+    	FROM 
+    				EMPLOYEE E
+    	INNER JOIN 
+    				DEPARTMENT D ON E.DEPT_NO = D.DEPT_NO
+   		INNER JOIN 
+   					COMMON_CODE C ON E.POSITION_CD = C.CMMN_CD
+    	INNER JOIN 
+    				RESPONSIBILITY_CATEGORY R ON E.RSPNSBL_CD = R.RSPNSBL_CD
+    	WHERE 
+    				E.EMP_NO = #{empNo}
+    	AND 
+    				C.CMMN_CD_GROUP = 'EMP002'
+    </select>
+    
+</mapper>

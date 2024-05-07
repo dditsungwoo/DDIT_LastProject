@@ -1,0 +1,11 @@
+cloud:
+  aws:
+    credentials:
+      instance-profile: false
+      access-key: AKIAZQ3DREBNLHW5DO7N
+      secret-key: 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
+    region:
+      auto: false
+      static: ap-northeast-2
+    stack:
+      auto: false

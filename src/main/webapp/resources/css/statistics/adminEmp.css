@@ -1,0 +1,103 @@
+@charset "UTF-8";
+
+.point {
+	font-size: 35px;
+	font-weight: 800;
+	color: var(--main-color);
+}
+
+.yearClassify {
+	height: 50px;
+}
+
+.yearClassify1 {
+	display: flex;
+	flex-direction: column;
+	height: 320px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.box1 {
+	/* width: 170px;
+	height: 120px;
+	text-align: center;
+	padding-top: 30px; */
+	flex: 1;
+	padding: 20px;
+}
+
+.box1 .heading1 {
+	margin-bottom: 5px;
+}
+
+.box2 {
+	width: 200px;
+	height: 120px;
+	text-align: center;
+}
+
+.box2 .heading1 {
+	position: relative;
+	top: 10px;
+}
+
+.box3 {
+    width: calc(100% / 3 - 10px);
+	/*height: 320px;*/
+	/*width: 510px;*/
+	/*margin-top: 30px;*/
+}
+
+.moreInfo {
+	width: 100%;
+	position: relative;
+	top: 5px;
+}
+
+.wf-flex-box.line2 {margin-top: 20px; height: calc(100% - 130px);}
+.line2 {
+	/*margin-top: 20px;*/
+	/*margin-top: 15px;*/
+	/*height: 320px;*/
+	/*height: calc(100% - 130px);*/
+}
+
+.line3 {margin-top: 15px;}
+
+.align-center {
+	text-align: center;
+}
+
+.chart-container {
+	margin: 0 auto;
+	display: flex;
+	justify-content: center;
+	/*height: 300px;*/
+	/* 내부 요소를 가운데 정렬 */
+}
+
+.genderBox {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.deptSelectWrap {position: relative; border-radius: 5px;} 
+.deptSelectWrap::before {
+    content: "\e942";
+    font-family: 'xeicon';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 21px;
+}
+
+#deptSelect {
+    height: 30px;
+    padding: 0 15px;
+    border-radius: 5px;
+    background: rgb(255 255 255 / 60%);
+}

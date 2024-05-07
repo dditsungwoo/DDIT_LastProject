@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.reservation.meetingroom.mapper.MtrResveMapper">
+	
+	<!-- 회의실 예약 리스트 불러오기 -->
+	<select id="getMtrResveList" parameterType="mtrReservationVO" resultType="mtrReservationVO">
+		SELECT 
+    				  R.MTR_RESVE_NO		<!-- 예약 번호 -->
+    				, M.MTR_NO				<!-- 회의실 번호 -->
+    				, M.MTR_LOC				<!-- 회의실 위치 -->
+	  				, M.MTR_NM				<!-- 회의실 이름 -->
+		   			, R.EMP_NO				<!-- 사원 번호 -->
+		   			, R.RESVE_BEGIN_DATE	<!-- 예약 시작일 -->
+		   			, R.RESVE_END_DATE		<!-- 예약 종료일 -->
+		   			, R.RESVE_CN 			<!-- 예약 내용 -->
+		FROM 
+    				MEETINGROOM_RESERVATION R 
+    	INNER JOIN 
+    				MEETINGROOM M ON R.MTR_NO = M.MTR_NO
+    	WHERE
+    				1 = 1
+    	<if test="mtrNo != null and mtrNo != ''">
+		AND
+					R.MTR_NO = #{mtrNo}
+		</if>
+	</select>
+	
+	<!-- 특정 예약 불러오기 -->
+	<select id="getMtrResve" parameterType="String" resultType="mtrReservationVO">
+		SELECT 
+	    			  R.MTR_RESVE_NO		<!-- 예약 번호 -->
+	    			, M.MTR_NO				<!-- 회의실 번호 -->
+	    			, M.MTR_LOC				<!-- 회의실 위치 -->
+	   				, M.MTR_NM				<!-- 회의실 이름 -->
+	    			, R.EMP_NO				<!-- 사원 번호 -->
+	    			, R.RESVE_BEGIN_DATE	<!-- 예약 시작 일시 -->
+	    			, R.RESVE_END_DATE		<!-- 예약 종료 일시 -->
+	    			, R.RESVE_CN 			<!-- 예약 내용 -->
+		FROM 
+    				MEETINGROOM_RESERVATION R 
+    	INNER JOIN 
+    				MEETINGROOM M ON R.MTR_NO = M.MTR_NO
+		WHERE
+					R.MTR_RESVE_NO = #{mtrResveNo}
+				
+	</select>
+	
+	<!-- 내 예약 불러오기 -->
+	<select id="getMyMtrResve" resultType="mtrReservationVO">
+		SELECT 
+    				  R.MTR_RESVE_NO		<!-- 예약 번호 -->
+	    			, M.MTR_LOC				<!-- 회의실 위치 -->
+	   				, M.MTR_NM				<!-- 회의실 이름 -->
+	    			, R.RESVE_BEGIN_DATE	<!-- 예약 시작 일시 -->
+	    			, R.RESVE_END_DATE		<!-- 예약 종료 일시 -->
+	    			, R.RESVE_CN 			<!-- 예약 내용 -->
+		FROM 
+    				MEETINGROOM_RESERVATION R 
+    	INNER JOIN 
+    				MEETINGROOM M ON R.MTR_NO = M.MTR_NO  			
+    	WHERE
+					R.EMP_NO = #{empNo} 
+		AND 
+					R.RESVE_END_DATE>= SYSDATE
+		ORDER BY
+    				R.RESVE_BEGIN_DATE ASC
+	</select>
+	
+	<!-- 지난 내 예약 불러오기 -->
+	<select id="getMyPastMtrResve" resultType="mtrReservationVO">
+		SELECT 
+    				  R.MTR_RESVE_NO		<!-- 예약 번호 -->
+	    			, M.MTR_LOC				<!-- 회의실 위치 -->
+	   				, M.MTR_NM				<!-- 회의실 이름 -->
+	    			, R.RESVE_BEGIN_DATE	<!-- 예약 시작 일시 -->
+	    			, R.RESVE_END_DATE		<!-- 예약 종료 일시 -->
+	    			, R.RESVE_CN 			<!-- 예약 내용 -->
+		FROM 
+    				MEETINGROOM_RESERVATION R 
+    	INNER JOIN 
+    				MEETINGROOM M ON R.MTR_NO = M.MTR_NO  			
+    	WHERE
+					R.EMP_NO = #{empNo}
+		AND 
+					R.RESVE_BEGIN_DATE >= SYSDATE - 14 
+        AND 
+        			SYSDATE >= R.RESVE_END_DATE 
+		ORDER BY
+    				R.RESVE_END_DATE DESC
+	</select>
+	
+	<!-- 회의실 예약 추가 -->
+	<insert id="createMtrResve" parameterType="mtrReservationVO">
+		INSERT INTO MEETINGROOM_RESERVATION
+    						(
+   							  MTR_RESVE_NO		<!-- 예약 번호 -->
+   							, MTR_NO			<!-- 회의실 번호 -->
+							, EMP_NO			<!-- 사원 번호 -->
+							, RESVE_BEGIN_DATE	<!-- 예약 시작 일시 -->
+							, RESVE_END_DATE	<!-- 예약 종료 일시 -->
+							, RESVE_CN			<!-- 예약 내용 -->
+							)
+		VALUES 
+							(
+							SEQ_MTR_RESVE.NEXTVAL
+							, #{mtrNo}
+							, #{empNo}		
+							, TO_DATE(#{resveBeginDate},'YYYY-MM-DD HH24:MI:SS')
+							, TO_DATE(#{resveEndDate},'YYYY-MM-DD HH24:MI:SS')
+							, #{resveCn}	
+							)
+	</insert>
+	
+	<!-- 회의실 예약 수정 -->
+	<update id="updateMtrResve" parameterType="mtrReservationVO">
+		UPDATE MEETINGROOM_RESERVATION SET 
+   							  MTR_NO = #{mtrNo}
+							, EMP_NO = #{empNo}
+							, RESVE_BEGIN_DATE = TO_DATE(#{resveBeginDate},'YYYY-MM-DD HH24:MI:SS')
+							, RESVE_END_DATE = TO_DATE(#{resveEndDate},'YYYY-MM-DD HH24:MI:SS')
+							, RESVE_CN = #{resveCn}
+		WHERE 
+							MTR_RESVE_NO = #{mtrResveNo}
+	</update>
+	
+	<!-- 회의실 예약 취소 -->
+	<delete id="deleteMtrResve" parameterType="String">
+		DELETE 
+				FROM MEETINGROOM_RESERVATION
+		WHERE
+				MTR_RESVE_NO = #{mtrResveNo}
+	</delete>
+	
+	<!-- 회의실 정보 resultMap -->
+	<resultMap type="mtrVO" id="mtrMap">
+		<result property="mtrNo" column="MTR_NO"/>
+		<result property="mtrLoc" column="MTR_LOC"/>
+		<result property="mtrNm" column="MTR_NM"/>
+		<result property="aceptblNmpr" column="ACEPTBL_NMPR"/>
+		<result property="photoUrl" column="PHOTO_URL"/>
+		<result property="usePosblYnCd" column="USE_POSBL_YN_CD"/>
+		<collection property="mtrEquipedList" resultMap="mtrEquipedMap"></collection>
+	</resultMap>
+	<resultMap type="mtrEquipmentVO" id="mtrEquipedMap">
+		<result property="eqpmnNo" column="EQPMN_NO"/>
+		<result property="mtrNo" column="MTR_NO"/>
+		<result property="equipYnCd" column="EQUIP_YN_CD"/>
+	</resultMap>
+	
+	<!-- 회의실 정보 불러오기 -->
+	<select id="getMtrInfo" resultMap="mtrMap">
+		SELECT 
+	                  M.MTR_NO				<!-- 회의실 번호 -->				
+	    			, M.MTR_LOC				<!-- 회의실 위치 -->	
+	   				, M.MTR_NM				<!-- 회의실 이름 -->	
+	                , M.ACEPTBL_NMPR    	<!-- 수용 가능 인원 -->
+	    			, M.PHOTO_URL			<!-- 사진 URL -->		
+	    			, M.USE_POSBL_YN_CD		<!-- 사용 가능 여부 코드 -->
+	    			, E.EQPMN_NO			<!-- 장비 번호 -->
+	    			, E.EQUIP_YN_CD			<!-- 장비 보유 여부 코드 -->
+		FROM 
+    				MEETINGROOM M 
+    	INNER JOIN 
+    				MEETINGROOM_EQUIPMENT E ON M.MTR_NO = E.MTR_NO
+        WHERE 
+        			M.MTR_NO=#{mtrNo}
+	</select>
+	
+	<!-- 예약된 시간 가져오기 -->
+	<select id="getMtrResvedTimes" parameterType="map" resultType="mtrReservationVO">
+		SELECT 
+				  RESVE_BEGIN_DATE
+				, RESVE_END_DATE 
+		FROM 
+				MEETINGROOM_RESERVATION 
+		WHERE 
+				MTR_NO=#{mtrNo} AND TO_CHAR(RESVE_BEGIN_DATE, 'YYYY-MM-DD') = #{resveBeginDate}
+	
+	</select>
+	
+	<!-- 오늘의 회의실 예약 가져오기 -->
+	<select id="getTodayMtrResveList" resultType="mtrReservationVO">
+		SELECT 
+	   				  R.MTR_RESVE_NO		<!-- 회의실 예약 번호 -->
+	   				, R.MTR_NO				<!-- 회의실 번호 -->
+	    			, M.MTR_LOC				<!-- 회의실 위치 -->
+	   				, M.MTR_NM				<!-- 회의실 이름 -->
+	   				, E.EMP_NM				<!-- 사원 이름 -->
+	   				, E.EMP_NO				<!-- 사원 번호 -->
+	    			, R.RESVE_BEGIN_DATE	<!-- 회의 시작 일시 -->
+	    			, R.RESVE_END_DATE		<!-- 회의 종료 일시 -->
+	    			, R.RESVE_CN 			<!-- 사용 목적 -->
+		FROM 
+    				MEETINGROOM_RESERVATION R 
+    	INNER JOIN 
+    				MEETINGROOM M ON R.MTR_NO = M.MTR_NO
+    	INNER JOIN 
+    				EMPLOYEE E ON R.EMP_NO = E.EMP_NO  			
+    	WHERE
+					TRUNC(R.RESVE_BEGIN_DATE) = TRUNC(SYSDATE)
+		ORDER BY
+					R.RESVE_BEGIN_DATE ASC
+	</select>
+	
+	<!-- 회의실 목록 불러오기 -->
+	<select id="getMtrs" resultType="mtrVO">
+		SELECT 
+					  MTR_NO			<!-- 회의실 번호 -->
+					, MTR_NM  			<!-- 회의실 이름 -->
+					, USE_POSBL_YN_CD	<!-- 사용 가능 여부 코드 -->
+		FROM
+					  MEETINGROOM
+		ORDER BY 
+					  USE_POSBL_YN_CD DESC
+					, MTR_NO ASC
+	</select>
+	
+</mapper>

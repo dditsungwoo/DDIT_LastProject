@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.employee.mapper.EmpAlramSetupMapper">
+	
+	<select id="getAlramSetUpList" parameterType="empVO" resultType="userSetupNtcnMatterVO">
+		SELECT SETUP_NTCN_NO, USER_SETUP_NO, SETUP_NTCN_NM, NTCN_YN_CD
+		FROM USER_SETUP_NTCN_MATTER
+		WHERE USER_SETUP_NO = #{empNo}
+		ORDER BY SETUP_NTCN_NO ASC
+	</select>
+	
+	<update id="updateAlramSetUpList" parameterType="hashMap">
+		UPDATE USER_SETUP_NTCN_MATTER
+		SET
+		NTCN_YN_CD = #{ntcnYnCd}
+		WHERE USER_SETUP_NO = #{empNo}
+		AND SETUP_NTCN_NO = #{setupNtcnNo}
+	</update>
+
+
+</mapper>

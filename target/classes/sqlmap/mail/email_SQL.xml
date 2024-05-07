@@ -1,0 +1,689 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.mail.mapper.EmailMapper">
+    
+	<!-- resultmap -->
+	<resultMap type="emailVO" id="emailMap">
+		<result property="emailNo" column="EMAIL_NO"/>
+		<result property="senderEmplNo" column="SENDER_EMPL_NO"/>
+		<result property="emailSj" column="EMAIL_SJ"/>
+		<result property="emailCn" column="EMAIL_CN"/>
+		<result property="sendDate" column="SEND_DATE"/>
+		<result property="tmprStre" column="TMPR_STRE"/>
+		<result property="atchmnflNo" column="ATCHMNFL_NO"/>
+		<result property="delCd" column="DEL_CD"/>
+		<collection property="emailRVOList" resultMap="emailRecipientMap"></collection>
+	</resultMap>
+	
+	<resultMap type="emailRecipientVO" id="emailRecipientMap">
+		<result property="emailNo" column="EMAIL_NO"/>
+		<result property="empNo" column="EMP_NO"/>
+		<result property="cnfirmDate" column="CNFIRM_DATE"/>
+		<result property="delCd" column="DEL_CD"/>
+	</resultMap>
+	
+		<!-- 페이지 관련 시작 -->
+	
+		<!-- 임시 보관 이메일 총 개수 V-->
+	<select id="getTemporaryMailCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+        FROM (
+            SELECT DISTINCT
+                E.EMAIL_NO
+            FROM
+                EMAIL E
+            JOIN
+                EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+            WHERE
+                E.SENDER_EMPL_NO = #{empNo}
+                AND E.DEL_CD = '0'
+                AND E.TMPR_STRE = '1'
+        )	
+	</select>
+	
+		<!-- 보낸 이메일 총 개수 V-->
+	<select id="getSendMailCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+        FROM (
+            SELECT DISTINCT
+                E.EMAIL_NO
+            FROM
+                EMAIL E
+            JOIN
+                EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+            WHERE
+                E.SENDER_EMPL_NO = #{empNo}
+                AND E.DEL_CD = '0'
+                AND E.TMPR_STRE = '0'
+        )
+	</select>
+	
+		<!-- 받은 이메일 총 개수 V-->
+	<select id="getMailCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+        FROM (
+            SELECT DISTINCT
+                E.EMAIL_NO
+            FROM
+                EMAIL E
+            JOIN
+                EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+            WHERE
+                ER.EMP_NO = #{empNo}
+                AND ER.DEL_CD = '0'
+                AND E.TMPR_STRE = '0'
+        )
+	</select>
+	
+		<!-- 아직 읽지 않은 이메일 개수 V-->
+	<select id="getNoreadCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+        FROM (
+            SELECT DISTINCT
+                E.EMAIL_NO
+            FROM
+                EMAIL E
+            JOIN
+                EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+            WHERE
+                ER.EMP_NO = #{empNo}
+                AND ER.DEL_CD = '0'
+                AND E.TMPR_STRE = '0'
+                AND ER.CNFIRM_DATE IS NULL
+        )
+	</select>
+	
+		<!-- 휴지통 이메일 개수 -->
+	<select id="getDeleteCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+        FROM (
+            SELECT DISTINCT
+                E.EMAIL_NO
+            FROM
+                EMAIL E
+            JOIN
+                EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+            WHERE
+                (ER.EMP_NO = #{empNo}
+                AND ER.DEL_CD = '1')
+                OR (E.SENDER_EMPL_NO = #{empNo}
+                AND E.DEL_CD = '1')
+
+        )
+	</select>
+	
+		<!-- 첨부파일 이메일 개수 -->
+	<select id="getAttachMailCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(*)
+        FROM (
+            SELECT DISTINCT
+                E.EMAIL_NO
+            FROM
+                EMAIL E
+            JOIN
+                EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+            WHERE
+                ER.EMP_NO = #{empNo}
+                AND ER.DEL_CD = '0'
+             	AND E.ATCHMNFL_NO IS NOT NULL
+        )
+	</select>
+	<!-- 페이지 관련 끝 -->
+	
+	<!-- 메일 쓰기 관련 시작 -->
+	<!-- 메일 쓰기 emailVO -->
+	<insert id="insertMail" parameterType="emailVO">
+	    <selectKey keyProperty="emailNo" resultType="String" order="BEFORE">
+	        SELECT SEQ_EMAIL.NEXTVAL AS EMAIL_NO FROM DUAL
+	    </selectKey>
+	    INSERT INTO EMAIL (EMAIL_NO, SENDER_EMPL_NO, EMAIL_SJ, EMAIL_CN, ATCHMNFL_NO)
+	    VALUES (#{emailNo}, #{empNo}, #{emailSj}, #{emailCn}, #{atchmnflNo})
+	</insert>
+	<!-- 메일 쓰기 emailRecipientVO -->
+	<insert id="insertRMail" parameterType="emailRecipientVO">
+		<selectKey keyProperty="emailNo" resultType="String" order="BEFORE">
+	        SELECT MAX(TO_NUMBER(EMAIL_NO)) AS EMAIL_NO FROM EMAIL
+	    </selectKey>
+		INSERT INTO EMAIL_RECIPIENT(EMAIL_NO, EMP_NO)
+		VALUES (#{emailNo}, #{empNo})
+	</insert>
+	<!-- 메일 쓰기 관련 끝 -->
+	
+	<!-- 상세보기 관련 시작 -->
+	<update id="putCnfirmDate" parameterType="emailVO">
+		UPDATE EMAIL_RECIPIENT
+		SET CNFIRM_DATE = CASE
+		                     WHEN CNFIRM_DATE IS NULL THEN SYSDATE
+		                     ELSE CNFIRM_DATE
+		                  END
+		WHERE EMAIL_NO = #{emailNo} AND EMP_NO = #{empNo}
+		
+	</update>
+	<select id="getMailDetail" parameterType="String" resultType="emailVO">
+		SELECT * FROM (
+		    SELECT 
+		        EMAIL_NO, 
+		        E.SENDER_EMPL_NO,
+		        E.EMAIL_SJ,
+		        E.EMAIL_CN,
+		        E.SEND_DATE,
+		        E.ATCHMNFL_NO,
+		        EM.EMAIL AS SENDER_EMAIL,
+		        EM.EMP_NM AS SENDER_NAME,
+		        LAG(TO_NUMBER(EMAIL_NO), 1,0) OVER(ORDER BY TO_NUMBER(EMAIL_NO) ) PREV_MAIL_NO,
+		        LEAD(TO_NUMBER(E.EMAIL_NO),1,0) OVER (ORDER BY TO_NUMBER(EMAIL_NO) )NEXT_MAIL_NO
+		    FROM 
+		        EMAIL E
+		    JOIN
+		    	EMPLOYEE EM ON E.SENDER_EMPL_NO = EM.EMP_NO
+		)
+		WHERE EMAIL_NO=#{emailNo} 
+		ORDER BY EMAIL_NO
+	</select>
+	<select id="getSendMailDetail" parameterType="String" resultType="emailVO">
+		SELECT 
+		    EMAIL_NO,
+		    SENDER_EMPL_NO,
+		    SENDER_NAME,
+		    EMAIL_SJ,
+		    EMAIL_CN,
+		    SEND_DATE,
+		    RECIPIENTLIST,
+		    ATCHMNFL_NO,
+		    PREV_MAIL_NO,
+		    NEXT_MAIL_NO
+		FROM (
+		    SELECT 
+		        E.EMAIL_NO,
+		        E.SENDER_EMPL_NO,
+		        EM.EMP_NM AS SENDER_NAME,
+		        E.EMAIL_SJ,
+		        E.EMAIL_CN,
+		        E.SEND_DATE,
+		        EM2.EMAIL AS SENDER_EMAIL,
+		        LAG(TO_NUMBER(E.EMAIL_NO), 1, 0) OVER(ORDER BY TO_NUMBER(E.EMAIL_NO)) PREV_MAIL_NO,
+		        LEAD(TO_NUMBER(E.EMAIL_NO), 1, 0) OVER (ORDER BY TO_NUMBER(E.EMAIL_NO)) NEXT_MAIL_NO,
+		        (
+		            SELECT LISTAGG(REM.EMP_NM, ', ') WITHIN GROUP (ORDER BY REM.EMP_NM) AS RECIPIENTLIST
+		            FROM EMPLOYEE REM
+		            JOIN EMAIL_RECIPIENT ER ON ER.EMP_NO = REM.EMP_NO
+		            WHERE ER.EMAIL_NO = E.EMAIL_NO
+		        ) AS RECIPIENTLIST,
+		        E.ATCHMNFL_NO
+		    FROM 
+		        EMAIL E
+		    JOIN
+		        EMPLOYEE EM ON E.SENDER_EMPL_NO = EM.EMP_NO
+		    JOIN
+		        EMPLOYEE EM2 ON E.SENDER_EMPL_NO = EM2.EMP_NO
+		    WHERE 
+		        E.EMAIL_NO = #{emailNo}
+		)
+		ORDER BY 
+		    EMAIL_NO
+
+
+	</select>	
+	
+	<select id="getattachedFiles" parameterType="String" resultType="attachedFileVO">
+		SELECT 
+			ATCHMNFL_NO, ATCHMNFL_SEQ, ATCHMNFL_NM, ATCHMNFL_ORIGIN_NM, ATCHMNFL_SIZE, ATCHMNFL_DWLD_DATE, ATCHMNFL_URL 
+		FROM 
+			ATTACHED_FILE
+		WHERE 
+			ATCHMNFL_NO = #{atchmnflNo}
+	</select>
+	<!-- 상세보기 관련 끝 -->
+	<!-- 대시보드용 -->
+	<select id="getDashboardList" resultType="emailVO" parameterType="hashMap">
+	WITH T AS (
+	    SELECT 
+	        ROWNUM RNUM,
+	        EMAIL_NO,
+	        SENDER_EMPL_NO,
+	        SENDER_NAME,
+	        EMAIL_SJ,
+	        SEND_DATE,
+	        CNFIRM_DATE,
+	        ATCHMNFL_NO,
+	        SENDER_EMAIL,
+	        SENDER_IMAGE_URL
+	    FROM (
+	        SELECT
+	            E.EMAIL_NO,
+	            E.SENDER_EMPL_NO,
+	            EM.EMP_NM AS SENDER_NAME,
+	            E.EMAIL_SJ,
+	            E.SEND_DATE,
+	            ER.CNFIRM_DATE,
+	            E.ATCHMNFL_NO,
+	            EM.EMAIL AS SENDER_EMAIL,
+	            EM.PROFL_IMAGE_URL AS SENDER_IMAGE_URL
+	        FROM
+	            EMAIL E
+	        JOIN
+	            EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+	        JOIN
+	            EMPLOYEE EM ON E.SENDER_EMPL_NO = EM.EMP_NO
+	        WHERE
+	            ER.EMP_NO = #{empNo}
+	            AND ER.DEL_CD = '0'
+	            AND E.TMPR_STRE = '0'
+	        ORDER BY
+	            E.SEND_DATE DESC
+	    )),
+	
+	    PNMAIL AS (
+	        SELECT 
+	            T.*,
+	            LAG(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS PREV_MAIL_NO,
+	            LEAD(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS NEXT_MAIL_NO
+	        FROM T
+	    )
+	
+		SELECT 
+		    PNMAIL.RNUM,
+		    PNMAIL.EMAIL_NO,
+		    PNMAIL.SENDER_EMPL_NO,
+		    PNMAIL.SENDER_NAME,
+		    PNMAIL.EMAIL_SJ,
+		    PNMAIL.SEND_DATE,
+		    PNMAIL.CNFIRM_DATE,
+		    PNMAIL.ATCHMNFL_NO,
+		    PNMAIL.SENDER_EMAIL,
+		    PNMAIL.SENDER_IMAGE_URL,
+		    (CASE WHEN PNMAIL.RNUM = 1 THEN NULL ELSE PNMAIL.PREV_MAIL_NO END) AS PREV_MAIL_NO,
+		    (CASE WHEN PNMAIL.RNUM = (SELECT COUNT(*) FROM T) THEN NULL ELSE PNMAIL.NEXT_MAIL_NO END) AS NEXT_MAIL_NO
+		FROM PNMAIL
+		WHERE PNMAIL.RNUM BETWEEN 1 AND 10
+		ORDER BY PNMAIL.RNUM
+	</select>
+	<!-- 받은메일함(메인) 관련 시작 -->
+	<select id="getMailList" parameterType="hashMap" resultType="emailVO">
+		WITH T AS (
+	    SELECT 
+	        ROWNUM RNUM,
+	        EMAIL_NO,
+	        SENDER_EMPL_NO,
+	        SENDER_NAME,
+	        EMAIL_SJ,
+	        SEND_DATE,
+	        CNFIRM_DATE,
+	        ATCHMNFL_NO,
+	        SENDER_EMAIL
+	    FROM (
+	        SELECT
+	            E.EMAIL_NO,
+	            E.SENDER_EMPL_NO,
+	            EM.EMP_NM AS SENDER_NAME,
+	            E.EMAIL_SJ,
+	            E.SEND_DATE,
+	            ER.CNFIRM_DATE,
+	            E.ATCHMNFL_NO,
+	            EM.EMAIL AS SENDER_EMAIL
+	        FROM
+	            EMAIL E
+	        JOIN
+	            EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+	        JOIN
+	            EMPLOYEE EM ON E.SENDER_EMPL_NO = EM.EMP_NO
+	        WHERE
+	            ER.EMP_NO = #{empNo}
+	            AND ER.DEL_CD = '0'
+	            AND E.TMPR_STRE = '0'
+	        ORDER BY
+	            E.SEND_DATE DESC
+	    )),
+	
+	    PNMAIL AS (
+	        SELECT 
+	            T.*,
+	            LAG(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS PREV_MAIL_NO,
+	            LEAD(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS NEXT_MAIL_NO
+	        FROM T
+	    )
+	
+		SELECT 
+		    PNMAIL.RNUM,
+		    PNMAIL.EMAIL_NO,
+		    PNMAIL.SENDER_EMPL_NO,
+		    PNMAIL.SENDER_NAME,
+		    PNMAIL.EMAIL_SJ,
+		    PNMAIL.SEND_DATE,
+		    PNMAIL.CNFIRM_DATE,
+		    PNMAIL.ATCHMNFL_NO,
+		    PNMAIL.SENDER_EMAIL,
+		    (CASE WHEN PNMAIL.RNUM = 1 THEN NULL ELSE PNMAIL.PREV_MAIL_NO END) AS PREV_MAIL_NO,
+		    (CASE WHEN PNMAIL.RNUM = (SELECT COUNT(*) FROM T) THEN NULL ELSE PNMAIL.NEXT_MAIL_NO END) AS NEXT_MAIL_NO
+		FROM PNMAIL
+		WHERE PNMAIL.RNUM BETWEEN (#{currentPage} * 10) - (10 - 1) AND (#{currentPage} * 10)
+		ORDER BY PNMAIL.RNUM
+	</select>	
+	<!-- 받은메일함(메인) 관련 끝 -->
+	
+	<!-- 보낸메일함 관련 시작 -->
+	<select id="getSendList" parameterType="hashMap" resultType="emailVO">
+        WITH T AS (
+	    SELECT 
+	        ROWNUM RNUM,
+	        EMAIL_NO,
+	        SENDER_EMPL_NO,
+	        SENDER_NAME,
+	        EMAIL_SJ,
+	        SEND_DATE,
+	        ATCHMNFL_NO,
+	        SENDER_EMAIL
+	    FROM (
+	        SELECT
+	            E.EMAIL_NO,
+	            E.SENDER_EMPL_NO,
+	            EM.EMP_NM AS SENDER_NAME,
+	            E.EMAIL_SJ,
+	            E.SEND_DATE,
+	            E.ATCHMNFL_NO,
+	            EM.EMAIL AS SENDER_EMAIL
+	        FROM
+	            EMAIL E
+	        JOIN
+	            EMPLOYEE EM ON E.SENDER_EMPL_NO = EM.EMP_NO
+	        WHERE
+	            E.SENDER_EMPL_NO = #{empNo}
+	            AND E.DEL_CD = '0'
+	            AND E.TMPR_STRE = '0'
+	        ORDER BY
+	            E.SEND_DATE DESC
+	    )),
+	
+	    PNMAIL AS (
+	        SELECT 
+	            T.*,
+	            LAG(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS PREV_MAIL_NO,
+	            LEAD(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS NEXT_MAIL_NO
+	        FROM T
+	    )
+	
+		SELECT 
+		    PNMAIL.RNUM,
+		    PNMAIL.EMAIL_NO,
+		    PNMAIL.SENDER_EMPL_NO,
+		    PNMAIL.SENDER_NAME,
+		    PNMAIL.EMAIL_SJ,
+		    PNMAIL.SEND_DATE,
+		    PNMAIL.ATCHMNFL_NO,
+		    PNMAIL.SENDER_EMAIL,
+		    (CASE WHEN PNMAIL.RNUM = 1 THEN NULL ELSE PNMAIL.PREV_MAIL_NO END) AS PREV_MAIL_NO,
+		    (CASE WHEN PNMAIL.RNUM = (SELECT COUNT(*) FROM T) THEN NULL ELSE PNMAIL.NEXT_MAIL_NO END) AS NEXT_MAIL_NO
+		FROM PNMAIL
+		WHERE PNMAIL.RNUM BETWEEN (#{currentPage} * 10) - (10 - 1) AND (#{currentPage} * 10)
+		ORDER BY PNMAIL.RNUM
+	</select>
+
+	<!-- 보낸메일함 관련 끝 -->
+	
+	<!-- 첨부파일메일함 관련 시작 -->
+	<select id="getAttachList" parameterType="hashMap" resultType="emailVO">
+		WITH T AS (
+		SELECT 
+		    ROWNUM RNUM,
+		    EMAIL_NO,
+		    SENDER_EMPL_NO,
+		    SENDER_NAME,
+		    EMAIL_SJ,
+		    SEND_DATE,
+		    CNFIRM_DATE,
+		    ATCHMNFL_NO,
+		    SENDER_EMAIL
+		FROM (
+		    SELECT
+		        E.EMAIL_NO,
+		        E.SENDER_EMPL_NO,
+		        EM.EMP_NM AS SENDER_NAME,
+		        E.EMAIL_SJ,
+		        E.SEND_DATE,
+		        ER.CNFIRM_DATE,
+		        E.ATCHMNFL_NO,
+		        EM.EMAIL AS SENDER_EMAIL
+		    FROM
+		        EMAIL E
+		    JOIN
+		        EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+		    JOIN
+		        EMPLOYEE EM ON E.SENDER_EMPL_NO = EM.EMP_NO
+	    WHERE
+			ER.EMP_NO = #{empNo}
+			AND ATCHMNFL_NO IS NOT NULL
+			AND ER.DEL_CD = '0'
+		ORDER BY
+	        E.SEND_DATE DESC
+		)) SELECT T.* FROM T
+		WHERE T.RNUM BETWEEN (#{currentPage} * 10) - (10 - 1) AND (#{currentPage} * 10)
+		ORDER BY RNUM		
+	</select>
+	<!-- 첨부파일메일함 관련 끝 -->
+	
+	<!-- 휴지통 관련 시작 -->
+	<select id="getDeleteList" parameterType="hashMap" resultType="emailVO">
+		SELECT 
+		     T.EMAIL_NO
+		     , T.SENDER_EMPL_NO
+		     , EMP.EMP_NM AS SENDER_NAME
+		     , T.EMAIL_SJ
+		     , T.EMAIL_CN
+		     , T.SEND_DATE
+		     , T.TMPR_STRE
+		     , T.ATCHMNFL_NO
+		     , T.DEL_CD
+		     , T.HARD_DEL_CD
+		     , LAG(T.EMAIL_NO) OVER(ORDER BY T.SEND_DATE DESC) PREV_EMAIL_NO
+		     , LEAD(T.EMAIL_NO) OVER(ORDER BY T.SEND_DATE DESC) NEXT_EMAIL_NO  
+		FROM EMAIL T
+		JOIN EMPLOYEE EMP ON T.SENDER_EMPL_NO = EMP.EMP_NO
+		JOIN (
+		    SELECT E.EMAIL_NO,'SENDER' GUBUN
+		    FROM   EMAIL E
+		    WHERE  E.SENDER_EMPL_NO = #{empNo}
+		    AND    E.DEL_CD = 1 AND E.HARD_DEL_CD = 0
+		    UNION ALL
+		    SELECT ER.EMAIL_NO,'RECIPIENT'
+		    FROM   EMAIL_RECIPIENT ER
+		    WHERE  ER.EMP_NO = #{empNo}
+		    AND    ER.DEL_CD = 1 AND ER.HARD_DEL_CD = 0
+		) U ON T.EMAIL_NO = U.EMAIL_NO
+	</select>
+	<!-- 받은메일 -> 휴지통 -->
+	<update id="deleteGetMail" parameterType="emailVO">
+		UPDATE EMAIL_RECIPIENT
+		SET DEL_CD = '1'
+		WHERE EMAIL_NO = #{emailNo} AND EMP_NO = #{empNo}
+	</update>
+	<!-- 보낸메일 -> 휴지통 -->
+	<update id="deleteSendMail" parameterType="emailVO">
+		UPDATE EMAIL
+		SET DEL_CD = '1'
+		WHERE EMAIL_NO = #{emailNo} AND SENDER_EMPL_NO = #{empNo}
+	</update>
+	<!-- 휴지통 -> 영구삭제 -->
+	<update id="hardDeleteGetMail" parameterType="emailVO">
+		UPDATE EMAIL_RECIPIENT
+		SET HARD_DEL_CD = '1'
+		WHERE EMAIL_NO = #{emailNo} AND EMP_NO = #{empNo} AND DEL_CD = '1'
+	</update>
+	<update id="hardDeleteSendMail" parameterType="emailVO">
+		UPDATE EMAIL
+		SET HARD_DEL_CD = '1'
+		WHERE EMAIL_NO = #{emailNo} AND SENDER_EMPL_NO = #{empNo} AND DEL_CD = '1'
+	</update>
+	
+	<!-- 안읽은메일함 관련 시작 -->
+	<select id="getUnreadList" parameterType="hashMap" resultType="emailVO">
+		WITH T AS (
+		    SELECT 
+		        ROWNUM RNUM,
+		        EMAIL_NO,
+		        SENDER_EMPL_NO,
+		        SENDER_NAME,
+		        EMAIL_SJ,
+		        SEND_DATE,
+		        CNFIRM_DATE,
+		        ATCHMNFL_NO,
+		        SENDER_EMAIL
+		    FROM (
+		        SELECT
+		            E.EMAIL_NO,
+		            E.SENDER_EMPL_NO,
+		            EM.EMP_NM AS SENDER_NAME,
+		            E.EMAIL_SJ,
+		            E.SEND_DATE,
+		            ER.CNFIRM_DATE,
+		            E.ATCHMNFL_NO,
+		            EM.EMAIL AS SENDER_EMAIL
+		        FROM
+		            EMAIL E
+		        JOIN
+		            EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+		        JOIN
+		            EMPLOYEE EM ON E.SENDER_EMPL_NO = EM.EMP_NO
+		        WHERE
+		            ER.EMP_NO = #{empNo}
+			        AND ER.DEL_CD = '0'
+			        AND ER.CNFIRM_DATE IS NULL
+			        AND E.TMPR_STRE = '0'
+		        ORDER BY
+		            E.SEND_DATE DESC
+		    )),
+		
+		    PNMAIL AS (
+		        SELECT 
+		            T.*,
+		            LAG(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS PREV_MAIL_NO,
+		            LEAD(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS NEXT_MAIL_NO
+		        FROM T
+		    )
+		
+		SELECT 
+		    PNMAIL.RNUM,
+		    PNMAIL.EMAIL_NO,
+		    PNMAIL.SENDER_EMPL_NO,
+		    PNMAIL.SENDER_NAME,
+		    PNMAIL.EMAIL_SJ,
+		    PNMAIL.SEND_DATE,
+		    PNMAIL.CNFIRM_DATE,
+		    PNMAIL.ATCHMNFL_NO,
+		    PNMAIL.SENDER_EMAIL,
+		    (CASE WHEN PNMAIL.RNUM = 1 THEN NULL ELSE PNMAIL.PREV_MAIL_NO END) AS PREV_MAIL_NO,
+		    (CASE WHEN PNMAIL.RNUM = (SELECT COUNT(*) FROM T) THEN NULL ELSE PNMAIL.NEXT_MAIL_NO END) AS NEXT_MAIL_NO
+		FROM PNMAIL
+		WHERE PNMAIL.RNUM BETWEEN (#{currentPage} * 10) - (10 - 1) AND (#{currentPage} * 10)
+		ORDER BY PNMAIL.RNUM
+	</select>
+	<!-- 안읽은메일함 관련 끝 -->
+	
+	<!-- 임시저장메일함 관련 시작 -->
+	<select id="getTemporaryList" parameterType="hashMap" resultType="emailVO">
+		WITH T AS (
+	    SELECT 
+	        ROWNUM RNUM,
+	        EMAIL_NO,
+	        SENDER_EMPL_NO,
+	        SENDER_NAME,
+	        EMAIL_SJ,
+	        SEND_DATE,
+	        CNFIRM_DATE,
+	        ATCHMNFL_NO,
+	        SENDER_EMAIL
+	    FROM (
+	        SELECT
+	            E.EMAIL_NO,
+	            E.SENDER_EMPL_NO,
+	            EM.EMP_NM AS SENDER_NAME,
+	            E.EMAIL_SJ,
+	            E.SEND_DATE,
+	            ER.CNFIRM_DATE,
+	            E.ATCHMNFL_NO,
+	            EM.EMAIL AS SENDER_EMAIL
+	        FROM
+	            EMAIL E
+	        JOIN
+	            EMAIL_RECIPIENT ER ON E.EMAIL_NO = ER.EMAIL_NO
+	        JOIN
+	            EMPLOYEE EM ON E.SENDER_EMPL_NO = EM.EMP_NO
+	        WHERE
+	            E.SENDER_EMPL_NO = #{empNo}
+	            AND E.DEL_CD = '0'
+	            AND E.TMPR_STRE = '1'
+	        ORDER BY
+	            E.SEND_DATE DESC
+	    )),
+	
+	    PNMAIL AS (
+	        SELECT 
+	            T.*,
+	            LAG(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS PREV_MAIL_NO,
+	            LEAD(T.EMAIL_NO) OVER (ORDER BY T.SEND_DATE DESC) AS NEXT_MAIL_NO
+	        FROM T
+	    )
+	
+		SELECT 
+		    PNMAIL.RNUM,
+		    PNMAIL.EMAIL_NO,
+		    PNMAIL.SENDER_EMPL_NO,
+		    PNMAIL.SENDER_NAME,
+		    PNMAIL.EMAIL_SJ,
+		    PNMAIL.SEND_DATE,
+		    PNMAIL.CNFIRM_DATE,
+		    PNMAIL.ATCHMNFL_NO,
+		    PNMAIL.SENDER_EMAIL,
+		    (CASE WHEN PNMAIL.RNUM = 1 THEN NULL ELSE PNMAIL.PREV_MAIL_NO END) AS PREV_MAIL_NO,
+		    (CASE WHEN PNMAIL.RNUM = (SELECT COUNT(*) FROM T) THEN NULL ELSE PNMAIL.NEXT_MAIL_NO END) AS NEXT_MAIL_NO
+		FROM PNMAIL
+		WHERE PNMAIL.RNUM BETWEEN (#{currentPage} * 10) - (10 - 1) AND (#{currentPage} * 10)
+		ORDER BY PNMAIL.RNUM
+	</select>
+	<!-- 임시저장 insert 시작 -->
+	<insert id="insertTemporaryMail" parameterType="emailVO">
+		<selectKey keyProperty="emailNo" resultType="String" order="BEFORE">
+	        SELECT SEQ_EMAIL.NEXTVAL AS EMAIL_NO FROM DUAL
+	    </selectKey>
+		    INSERT INTO EMAIL (EMAIL_NO, SENDER_EMPL_NO, EMAIL_SJ, EMAIL_CN, TMPR_STRE, ATCHMNFL_NO)
+		    VALUES (#{emailNo}, #{empNo}, #{emailSj}, #{emailCn}, '1', NULL)
+	</insert>
+	<insert id="insertTemporaryRMail" parameterType="emailRecipientVO">
+		<selectKey keyProperty="emailNo" resultType="String" order="BEFORE">
+	        SELECT MAX(TO_NUMBER(EMAIL_NO)) AS EMAIL_NO FROM EMAIL
+	    </selectKey>
+			INSERT INTO EMAIL_RECIPIENT(EMAIL_NO, EMP_NO)
+			VALUES (#{emailNo}, #{empNo})
+	</insert>
+	<!-- 임시저장 insert 끝 -->
+	<!-- 임시저장메일함 관련 끝 -->
+	
+	<!-- 파일 insert -->
+	<insert id="insertAttachedFile" parameterType="attachedFileVO">
+	
+	    INSERT INTO ATTACHED_FILE 
+	    (
+	          ATCHMNFL_NO
+	        , ATCHMNFL_SEQ
+	        , ATCHMNFL_NM
+	        , ATCHMNFL_ORIGIN_NM
+	        , ATCHMNFL_SIZE
+	        , ATCHMNFL_URL
+	    )
+	    VALUES
+	    (
+	         #{atchmnflNo}
+	       , #{atchmnflSeq}
+	       , #{atchmnflNm}
+	       , #{atchmnflOriginNm}
+	       , #{atchmnflSize}
+	       , #{atchmnflUrl}
+	    )
+	</insert>
+	
+	<select id="getEmpEmail" parameterType="String" resultType="empVO">
+		SELECT EMP_NO, EMAIL FROM EMPLOYEE WHERE EMP_NM = #{empNm}
+	</select>
+	
+	
+	
+</mapper>

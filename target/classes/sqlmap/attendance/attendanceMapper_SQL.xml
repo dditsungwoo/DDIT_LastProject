@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.attendance.mapper.AttendanceMapper">
+
+	<select id="getAttendanceList" resultType="attendanceManageVO" parameterType="hashMap">
+		SELECT FULL_DATE.A AS FULL_DATE, EMP_NO, ATTEND_TIME, LVFFC_TIME
+				, ROUND((LVFFC_TIME - ATTEND_TIME) * 24 - 
+				(CASE 
+				WHEN 12 > TO_NUMBER(TO_CHAR(ATTEND_TIME, 'HH24')) THEN 1
+		        WHEN TO_NUMBER(TO_CHAR(ATTEND_TIME, 'HH24')) = 12 THEN TO_NUMBER(TO_CHAR(ATTEND_TIME, 'MI'))/60
+		        ELSE 0
+		    	END), 1) AS TOTAL
+		FROM (
+		    SELECT TO_CHAR(TO_DATE(#{firstDay}, 'YYYYMMDD') + LEVEL - 1, 'YYYYMMDD') AS A
+		    FROM DUAL
+		    CONNECT BY TO_DATE(#{lastDay}, 'YYYYMMDD') >= TO_DATE(#{firstDay}, 'YYYYMMDD') + LEVEL - 1
+		) FULL_DATE
+		LEFT OUTER JOIN ATTENDANCE_MANAGE AT ON TO_CHAR(ATTEND_TIME, 'YYYYMMDD') = FULL_DATE.A AND AT.EMP_NO = #{empNo}
+		ORDER BY FULL_DATE.A ASC
+	</select>
+	
+	<!-- 오늘의 근무 현재근무시간 띄우기 -->
+	<select id="getTodayWorkTime" resultType="String" parameterType="hashMap">
+	<!-- 만약 12시 ~ 13시면 해당 시간의 분만큼 빼고 12시보다 아래면 그대로 크면 1만큼 빼준다 -->
+		SELECT ROUND((SYSDATE-ATTEND_TIME)*24 - 
+				(CASE 
+				WHEN 12 > TO_NUMBER(TO_CHAR(SYSDATE, 'HH24')) THEN 0
+		        WHEN TO_NUMBER(TO_CHAR(SYSDATE, 'HH24')) = 12 THEN TO_NUMBER(TO_CHAR(SYSDATE, 'MI'))/60
+		        ELSE 1
+		    	END) + 
+		    	(CASE 
+				WHEN 12 > TO_NUMBER(TO_CHAR(ATTEND_TIME, 'HH24')) THEN 0
+		        WHEN TO_NUMBER(TO_CHAR(ATTEND_TIME, 'HH24')) = 12 THEN TO_NUMBER(TO_CHAR(ATTEND_TIME, 'MI'))/60
+		        ELSE 1
+		    	END)
+		    	, 2) 
+		FROM ATTENDANCE_MANAGE
+		WHERE SUBSTR(SYSDATE,1,10) = SUBSTR(ATTEND_TIME,1,10)
+		AND EMP_NO = #{empNo}
+	</select>
+	
+<!-- 	<select id="getWeekWorkTime" resultType="String" parameterType="hashMap"> -->
+<!-- 		select NVL(TRUNC((LVFFC_TIME - ATTEND_TIME) * 24,0),0)||'h ' || NVL(TRUNC(MOD((LVFFC_TIME - ATTEND_TIME) * 24,1)*60,0),0) || 'm' AS COM_TIME -->
+<!-- 		from attendance_manage -->
+<!-- 		where attend_time between #{firstDay} and to_date(#{lastDay},'yyyymmdd')+0.99999 -->
+<!-- 		and emp_no = #{empNo} -->
+<!-- 		order by attend_time asc -->
+<!-- 	</select> -->
+	
+	<!-- 주간 근무시간띄우려다가 월간도 같은 로직이라 같이쓰게 됨 -->
+	<select id="getWeekWorkTime" resultType="String" parameterType="hashMap">
+		SELECT  q1.COM_TIME
+		FROM (
+		    SELECT TO_CHAR(ATTEND_TIME, 'yyyymmdd') AS ATTEND_DATE,
+		           NVL(TRUNC((LVFFC_TIME - ATTEND_TIME) * 24 -
+					(CASE 
+					WHEN TO_NUMBER(TO_CHAR(LVFFC_TIME, 'HH24')) > 13 
+					AND 12 > TO_NUMBER(TO_CHAR(ATTEND_TIME, 'HH24')) 
+					THEN 1
+			        ELSE 0
+			    	END)
+					, 0), 0) || 'h ' || 
+		           NVL(TRUNC(MOD((LVFFC_TIME - ATTEND_TIME) * 24, 1) * 60, 0), 0) || 'm' AS COM_TIME
+		    FROM ATTENDANCE_MANAGE
+		    WHERE ATTEND_TIME BETWEEN #{firstDay} AND TO_DATE(#{lastDay}, 'yyyymmdd') + 0.99999
+		    AND EMP_NO = #{empNo}
+		) q1
+	<!-- 출근이 빈 날짜가 출력되지 않아 빈 날짜를 채워서 NULL을 띄우기 위한 조인 -->
+		RIGHT OUTER JOIN (
+		    SELECT TO_CHAR(TO_DATE(#{firstDay},'YYYYMMDD') + LEVEL - 1, 'YYYYMMDD') AS a
+		    FROM dual
+		    CONNECT BY TO_DATE(#{lastDay},'YYYYMMDD') >= TO_DATE(#{firstDay},'YYYYMMDD') + LEVEL - 1
+		) q2 ON q1.attend_date = q2.a
+		ORDER BY NVL(q1.attend_date, q2.a) ASC
+	</select>
+	
+	<!-- 누적근무시간 -->
+	<select id="getPlusTime" resultType="String" parameterType="hashMap">
+		SELECT NVL(TRUNC(SUM((LVFFC_TIME - ATTEND_TIME) * 24) - 
+				(SELECT COUNT(att_no)
+				FROM ATTENDANCE_MANAGE
+				WHERE EMP_NO = #{empNo}
+				AND (TO_CHAR(LVFFC_TIME, 'HH24')) > 13
+				AND 12 > (TO_CHAR(ATTEND_TIME, 'HH24'))
+				AND ATTEND_TIME BETWEEN TO_DATE(#{firstDay}, 'YYYYMMDD') AND TO_DATE(#{lastDay}, 'YYYYMMDD') + 0.99999
+				)	
+		,0),0)||'h ' || NVL(TRUNC(MOD(SUM(LVFFC_TIME - ATTEND_TIME) * 24,1)*60,0),0) || 'm' AS COM_TIME
+		FROM ATTENDANCE_MANAGE
+		WHERE EMP_NO = #{empNo}
+		AND ATTEND_TIME BETWEEN #{firstDay} and to_date(#{lastDay},'yyyymmdd')+0.99999
+		GROUP BY EMP_NO
+	</select>
+	
+	<!-- 평균출근시간 -->
+	<select id="getAvgAttend" resultType="String" parameterType="hashMap">
+		SELECT 
+		    NVL(TO_CHAR(TRUNC(AVG(TO_NUMBER(TO_CHAR(ATTEND_TIME, 'HH24')) + TO_NUMBER(TO_CHAR(ATTEND_TIME, 'MI')) / 60)), 'FM99'),0) || ':' ||
+		    NVL(TO_CHAR(ROUND(MOD(AVG(TO_NUMBER(TO_CHAR(ATTEND_TIME, 'HH24')) * 60 + TO_NUMBER(TO_CHAR(ATTEND_TIME, 'MI'))), 60)), 'FM99'),'00') AS average_hour
+		FROM ATTENDANCE_MANAGE
+		WHERE EMP_NO = #{empNo}
+		AND ATTEND_TIME BETWEEN #{firstDay} and to_date(#{lastDay},'yyyymmdd')+0.99999
+		AND ATTEND_TIME IS NOT NULL
+		AND VCATN_SE_CD IS NULL
+	</select>
+	
+	<!-- 평균퇴근시간 -->
+	<select id="getAvgLeave" resultType="String" parameterType="hashMap">
+		SELECT 
+		    NVL(TO_CHAR(TRUNC(AVG(TO_NUMBER(TO_CHAR(LVFFC_TIME, 'HH24')) + TO_NUMBER(TO_CHAR(LVFFC_TIME, 'MI')) / 60)), 'FM99'),0) || ':' ||
+		    NVL(TO_CHAR(ROUND(MOD(AVG(TO_NUMBER(TO_CHAR(LVFFC_TIME, 'HH24')) * 60 + TO_NUMBER(TO_CHAR(LVFFC_TIME, 'MI'))), 60)), 'FM99'),'00') AS average_hour
+		FROM ATTENDANCE_MANAGE
+		WHERE EMP_NO = #{empNo}
+		AND ATTEND_TIME BETWEEN #{firstDay} and to_date(#{lastDay},'yyyymmdd')+0.99999
+		AND ATTEND_TIME IS NOT NULL
+		AND VCATN_SE_CD IS NULL
+	</select>
+	
+	<!-- 평균근무시간 -->
+	<select id="getAvgWork" resultType="String" parameterType="hashMap">
+		SELECT NVL(TRUNC(AVG((TO_NUMBER(LVFFC_TIME - ATTEND_TIME))*24 - 
+					(CASE 
+					WHEN TO_NUMBER(TO_CHAR(LVFFC_TIME, 'HH24')) > 13 
+					AND 12 > TO_NUMBER(TO_CHAR(ATTEND_TIME, 'HH24')) 
+					THEN 1
+			        ELSE 0
+			    	END)
+				),0),0) || 'h ' || NVL(ROUND(MOD(AVG(TO_NUMBER(LVFFC_TIME - ATTEND_TIME))*24,1)*60,0),0) || 'm' AS average_hour
+		FROM ATTENDANCE_MANAGE
+		WHERE EMP_NO = #{empNo}
+		AND ATTEND_TIME BETWEEN #{firstDay} and to_date(#{lastDay},'yyyymmdd')+0.99999
+		AND ATTEND_TIME IS NOT NULL
+		AND VCATN_SE_CD IS NULL
+	</select>
+	
+	<!-- 정상근무 횟수 -->
+	<select id="getWorkCount" resultType="String" parameterType="hashMap">
+		SELECT 	COUNT(EMP_NO)
+		  FROM 	ATTENDANCE_MANAGE
+		 WHERE 	EMP_NO = #{empNo}
+		   AND 	ATTEND_TIME BETWEEN #{firstDay} AND to_date(#{lastDay},'yyyymmdd')+0.99999
+		   AND 	WORK_RESULT_CD = '1'
+	</select>
+	
+	<!-- 지각횟수 -->
+	<select id="getLateCount" resultType="String" parameterType="hashMap">
+		SELECT 	COUNT(EMP_NO)
+		  FROM 	ATTENDANCE_MANAGE
+		 WHERE 	EMP_NO = #{empNo}
+		   AND 	ATTEND_TIME BETWEEN #{firstDay} AND to_date(#{lastDay},'yyyymmdd')+0.99999
+		   AND 	WORK_RESULT_CD = '2'
+	</select>
+	
+	<!-- 연차횟수 -->
+	<select id="getRestCount" resultType="String" parameterType="hashMap">
+		SELECT 	SUM(
+					(CASE 
+					WHEN VCATN_SE_CD = '1' THEN 1
+					WHEN VCATN_SE_CD = '2' THEN 0.5
+					WHEN VCATN_SE_CD = '3' THEN 0.5
+					ELSE 0
+			    	END)
+				)
+		  FROM 	ATTENDANCE_MANAGE
+		 WHERE 	EMP_NO = #{empNo}
+		   AND 	ATTEND_TIME BETWEEN #{firstDay} AND to_date(#{lastDay},'yyyymmdd')+0.99999
+		   AND 	VCATN_SE_CD IS NOT NULL
+	</select>
+	
+	<!-- 외출횟수 -->
+	<select id="getOut1Count" resultType="String" parameterType="hashMap">
+		SELECT 	COUNT(EMP_NO)
+		  FROM 	ATTENDANCE_MANAGE
+		 WHERE 	EMP_NO = #{empNo}
+		   AND 	ATTEND_TIME BETWEEN #{firstDay} AND to_date(#{lastDay},'yyyymmdd')+0.99999
+		   AND 	WORK_RESULT_CD = '3'
+	</select>
+	
+	<!-- 조퇴횟수 -->
+	<select id="getOut2Count" resultType="String" parameterType="hashMap">
+		SELECT	COUNT(EMP_NO)
+		  FROM	ATTENDANCE_MANAGE
+		 WHERE	EMP_NO = #{empNo}
+		   AND 	ATTEND_TIME BETWEEN #{firstDay} AND to_date(#{lastDay},'yyyymmdd')+0.99999
+		   AND 	WORK_RESULT_CD = '4'
+	</select>
+	
+	<!-- 결근횟수 -->
+	<select id="getOut3Count" resultType="String" parameterType="hashMap">
+		SELECT	COUNT(EMP_NO)
+		  FROM 	ATTENDANCE_MANAGE
+		 WHERE 	EMP_NO = #{empNo}
+		   AND 	ATTEND_TIME BETWEEN #{firstDay} AND to_date(#{lastDay},'yyyymmdd')+0.99999
+		   AND	WORK_RESULT_CD = '6'
+	</select>
+	
+	<!-- 출근 시간  -->
+	<select id="getAttendTime" resultType="String" parameterType="hashMap">
+		SELECT	ATTEND_TIME
+		  FROM 	ATTENDANCE_MANAGE
+		 WHERE 	SUBSTR(SYSDATE,1,10) = SUBSTR(ATTEND_TIME,1,10)
+		   AND 	EMP_NO = #{empNo}
+	</select>
+	
+	<!-- 퇴근 시간  -->
+	<select id="getLvffcTime" resultType="String" parameterType="hashMap">
+		SELECT	LVFFC_TIME
+		  FROM 	ATTENDANCE_MANAGE
+		 WHERE 	SUBSTR(SYSDATE,1,10) = SUBSTR(ATTEND_TIME,1,10)
+		   AND 	EMP_NO = #{empNo}
+	</select>
+	
+	<!-- 출근 시간 등록 -->
+	<insert id="insertAttend" parameterType="hashMap">
+		INSERT INTO ATTENDANCE_MANAGE (ATT_NO, EMP_NO, ATTEND_TIME, LVFFC_TIME, WORK_RESULT_CD)
+		VALUES (seq_attend.nextVal, #{empNo}, SYSDATE, NULL, NULL)
+	</insert>
+	
+	<select id="getRestCd" resultType="String" parameterType="hashMap">
+		SELECT	NVL(VCATN_SE_CD,0)
+		  FROM 	ATTENDANCE_MANAGE
+		 WHERE 	SUBSTR(SYSDATE,1,10) = SUBSTR(ATTEND_TIME,1,10)
+		   AND 	EMP_NO = #{empNo}
+	</select>
+	
+	<select id="getAttendMinute" resultType="String" parameterType="hashMap">
+		SELECT	TO_CHAR(ATTEND_TIME, 'HH24:MI')
+		  FROM 	ATTENDANCE_MANAGE
+		 WHERE 	SUBSTR(SYSDATE,1,10) = SUBSTR(ATTEND_TIME,1,10)
+		   AND 	EMP_NO = #{empNo}
+	</select>
+	
+	<!-- 퇴근 시간 등록  -->
+	<update id="insertLvffc" parameterType="hashMap">
+		UPDATE ATTENDANCE_MANAGE
+		SET
+		LVFFC_TIME = SYSDATE
+		, WORK_RESULT_CD = #{state}
+		WHERE EMP_NO = #{empNo}
+		AND SUBSTR(SYSDATE,1,10) = SUBSTR(ATTEND_TIME,1,10)
+	</update>
+	
+	<select id="getTodayRestUse" parameterType="hashMap" resultType="String">
+		SELECT VCATN_SE_CD
+		FROM VACATION_RECORD
+		WHERE EMP_NO = #{empNo}
+		AND SUBSTR(SYSDATE,1,10) = SUBSTR(TO_DATE(VCATN_USE_DATE),1,10)
+	</select>
+	
+	<select id="getVcatnSeCd" parameterType="hashMap" resultType="String">
+		SELECT NVL(VCATN_SE_CD,'0')
+		FROM ATTENDANCE_MANAGE
+		WHERE ATTEND_TIME BETWEEN #{firstDay} AND to_date(#{lastDay},'yyyymmdd')+0.99999
+		AND EMP_NO = #{empNo}
+		ORDER BY ATTEND_TIME ASC
+	</select>
+	
+</mapper>

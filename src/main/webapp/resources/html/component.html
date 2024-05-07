@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>workforest</title>
+    <link rel="icon" href="/resources/img/favicon.png">
+    <link rel="stylesheet" href="/resources/css/common.css">
+    <script src="/resources/js/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/37.0.1/classic/ckeditor.js"></script>
+    <script src="/resources/js/common.js"></script>
+    <script src="/resources/js/stripe-gradient.js"></script>
+</head>
+
+<body>
+    <canvas id="gradient"></canvas>
+
+    <div class="main-container">
+        <header class="custom">
+            <a href="javascript:void(0)" class="logo">WORKFOREST</a>
+            <div class="search-bar">
+                <input type="text" placeholder="Search">
+            </div>
+            <p class="header-txt">김대덕님, 오늘도 힘차게 화이팅하세요!</p>
+            <ul class="wf-util">
+                <li>
+                    <a href="javascript:void(0)" title="채팅">
+                        <i class="xi-wechat"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" title="알림">
+                        <i class="xi-bell"></i>
+                    </a>
+                    <div class="wf-menu-dropdown">
+                        <ul class="alarm-list">
+                            <li>
+                                <img src="/img/icon/avatar.png" class="user-img">
+                                <div>
+                                    <span class="tit">[일정등록]'주간회의' 일정이
+                                        등록되었습니다.</span>
+                                    <p>
+                                        <span class="date">2024-03-03 11:30</span>
+                                        <span class="employee">양연주 사장</span>
+                                    </p>
+                                </div>
+                            </li>
+                            <li>
+                                <img src="/img/icon/avatar.png" class="user-img">
+                                <div>
+                                    <span class="tit">[일정등록]'주간회의' 일정이
+                                        등록되었습니다.</span>
+                                    <p>
+                                        <span class="date">2024-03-03 11:30</span>
+                                        <span class="employee">양연주 사장</span>
+                                    </p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" title="설정">
+                        <i class="xi-cog"></i>
+                    </a>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" class="user-img-icon" title="사용자">
+                        <img src="/img/icon/avatar.png" class="user-img">
+                    </a>
+                    <div class="wf-menu-dropdown">
+                        <div class="wf-flex-box">
+                            <img src="/img/icon/avatar.png" class="user-img">
+                            <div>
+                                <span class="user-info">연구개발본부 개발1팀</span>
+                                <span class="user-name">김대덕 사원</span>
+                            </div>
+                        </div>
+                        <div class="menu-wrap">
+                            <a href="#" class="menu-tit my-profile">내 프로필</a>
+                            <a href="#" class="menu-tit logout">로그아웃</a>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </header>
+        <div class="content-wrap">
+            <aside class="sidebar custom">
+                <div class="sidebar-user-info">
+                    <div class="img-box">
+                        <img src="/img/icon/avatar.png">
+                    </div>
+                    <span class="name">김대덕 사원</span>
+                    <span class="team">연구개발본부 개발팀</span>
+                </div>
+                <div id="leftside-navigation" class="leftside-navigation">
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>업무관리</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">업무</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">프로젝트</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)">
+                                <i class="xi-home"></i>
+                                <span>전자결재</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>예약/신청</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">회의실 예약</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">차량 예약</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">비품 대여</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>일정관리</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">일정</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">휴가</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)">
+                                <i class="xi-home"></i>
+                                <span>근태관리</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)" class="arrow">
+                                <i class="xi-home"></i>
+                                <span>게시판</span>
+                            </a>
+                            <ul class="depth2">
+                                <li>
+                                    <a href="javascript:void(0)">공지사항</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">자유게시판</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">건의게시판</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="depth1">
+                        <li class="sub-menu">
+                            <a href="javascript:void(0)">
+                                <i class="xi-home"></i>
+                                <span>조직도</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <main class="custom">
+                <!-- =============== body 시작 =============== -->
+                <div class="wf-main-container">
+                    <!-- =============== 상단타이틀영역 시작 =============== -->
+                    <div class="wf-tit-wrap">
+                        <h1 class="page-tit">상단타이틀</h1>
+                        <div class="side-util">
+                            <button type="button" class="btn1">#F8FFF8</button>
+                            <button type="button" class="btn2">#17C653</button>
+                            <button type="button" class="btn3">#003A00</button>
+                            <button type="button" class="btn4">#375E9E</button>
+                        </div>
+                    </div>
+                    <!-- =============== 상단타이틀영역 끝 =============== -->
+                    <!-- =============== 컨텐츠 영역 시작 =============== -->
+                    <div class="wf-content-wrap">
+
+                        <div class="wf-content-area">
+                            <p class="heading1">박스 폰트스타일</p>
+                            <!-- 한줄로 나열하고 싶을때 "wf-flex-box"추가 -->
+                            <div class="wf-flex-box">
+                                <div class="wf-content-box">
+                                    <p class="box-heading1">box-heading1</p>
+                                    <p>기본 폰트 쓰면 이렇게 나옵니다</p>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="wf-content-area">
+                            <p class="heading1">박스 스타일</p>
+                            <!-- 한줄로 나열하고 싶을때 "wf-flex-box"추가 -->
+                            <div class="wf-flex-box">
+                                <div class="wf-content-box">
+                                    <p class="box-heading1">휴가</p>
+                                    <p>11일</p>
+                                </div>
+                                <div class="wf-content-box">
+                                    <p class="box-heading1">휴가</p>
+                                    <p>11일</p>
+                                </div>
+                                <div class="wf-content-box">
+                                    <p class="box-heading1">휴가</p>
+                                    <p>11일</p>
+                                </div>
+                                <div class="wf-content-box">
+                                    <p class="box-heading1">휴가</p>
+                                    <p>11일</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wf-content-area">
+                            <p class="heading1">인풋</p>
+                            <mark>등록할때 인풋요소들(인풋,셀렉트)은 반드시 ul class="wf-insert-form"로 감싸주세요! (html 구조 ul>li)</mark>
+                            <!--  -->
+                            <ul class="wf-insert-form">
+                                <li>
+                                    <label>인풋 텍스트</label>
+                                    <input type="text" placeholder="텍스트를 입력해주세요">
+                                </li>
+                                <br>
+                                <li>
+                                    <label>시간</label>
+                                    <div class="wf-flex-box">
+                                        <input type="text" placeholder="텍스트를 입력해주세요">
+                                        <span class="hyphen"></span>
+                                        <input type="text" placeholder="텍스트를 입력해주세요">
+                                    </div>
+                                </li>
+                                <br>
+                                <li>
+                                    <label>select</label>
+                                    <div class="wf-select-group">
+                                        <select name="" id="">
+                                            <option value="">옵션</option>
+                                            <option value="">옵션</option>
+                                        </select>
+                                    </div>
+                                </li>
+                                <br>
+                                <li>
+                                    <label>textarea</label>
+                                    <textarea name="" id="" placeholder="텍스트틀 입력해주세요"></textarea>
+                                </li>
+                                <br>
+                                <li>
+                                    <label>날짜</label>
+                                    <input type="date">
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="wf-content-area">
+                            <p class="heading1">버튼 스타일1</p>
+                            <mark>button태그만 복사해서 쓰면 됩니다</mark>
+
+                            <div class="wf-flex-box">
+                                <button type="button" class="btn1">btn1 - 취소</button>
+                                <button type="button" class="btn2">btn2 - 등록/저장</button>
+                                <button type="button" class="btn3">btn3 - 삭제</button>
+                                <button type="button" class="btn4">btn4 - 수정</button>
+                                <button type="button" class="btn5">btn4 - 반납 외 기타 버튼들</button>
+                                <button type="button" class="btn6">btn6</button>
+                            </div>
+
+                            <div style="margin: 10px 0 ;"></div>
+
+                            <div class="wf-flex-box">
+                                <button type="button" class="btn5">
+                                    PDF <i class="xi-download"></i>
+                                </button>
+                                <button type="button" class="btn5">
+                                    PDF <i class="xi-upload"></i>
+                                </button>
+                                <button type="button" class="btn1">
+                                    <i class="xi-attachment"></i>
+                                </button>
+                                <button type="button" class="btn1">
+                                    <i class="xi-documents-o"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="wf-content-area">
+                            <p class="heading1">뱃지 스타일</p>
+                            <!-- 한줄로 나열하고 싶을때 "wf-flex-box"추가 -->
+                            <div class="wf-flex-box">
+                                <span class="wf-badge1">Primary</span>
+                                <span class="wf-badge2">Secondary</span>
+                                <span class="wf-badge3">Success</span>
+                                <span class="wf-badge4">Warning</span>
+                                <span class="wf-badge5">Danger</span>
+                            </div>
+                        </div>
+
+                        <div class="wf-content-area">
+                            <p class="heading1">폰트 스타일</p>
+                            <p class="heading1">heading1</p>
+                            <p class="heading2">heading2</p>
+                        </div>
+
+                        <div class="wf-content-area">
+                            <p class="heading1">탭 스타일</p>
+                            <!-- ------------------------------------------ -->
+                            <p class="heading2">----- tab-type1 -----</p>
+                            <div class="tab-type tab-type1">
+                                <div class="tab-menu">
+                                    <button data-tab="tab1" type="button" class="tab-btn active">제목1</button>
+                                    <button data-tab="tab2" type="button" class="tab-btn">제목2</button>
+                                    <button data-tab="tab3" type="button" class="tab-btn">제목3</button>
+                                    <div class="tab-indicator"></div>
+                                </div>
+
+                                <!-- tab1  -->
+                                <div data-tab="tab1" class="tab-content active">
+                                    <div class="tab-board-lst">
+                                        tab1 내용 넣어주세요!
+                                    </div>
+                                </div>
+
+                                <!-- tab2  -->
+                                <div data-tab="tab2" class="tab-content">
+                                    <div class="tab-board-lst">
+                                        tab2 내용 넣어주세요!
+                                    </div>
+                                </div>
+
+                                <!-- tab3  -->
+                                <div data-tab="tab3" class="tab-content">
+                                    <div class="tab-board-lst">
+                                        tab3 내용 넣어주세요!
+                                    </div>
+                                </div>
+                            </div>
+
+                            <br><br><br><br>
+
+                            <!-- ------------------------------------------ -->
+                            <p class="heading2">----- tab-type2 -----</p>
+                            <div class="tab-type tab-type2">
+                                <div class="tab-menu">
+                                    <!-- "active"가 추가되면 메뉴가 활성화됩니다. -->
+                                    <button data-tab="tab1" type="button" class="tab-btn active">탭제목1</button>
+                                    <button data-tab="tab2" type="button" class="tab-btn">탭제목2</button>
+                                    <button data-tab="tab3" type="button" class="tab-btn">탭제목3</button>
+                                    <button data-tab="tab4" type="button" class="tab-btn">탭제목4</button>
+                                    <button data-tab="tab5" type="button" class="tab-btn">탭제목5</button>
+                                    <div class="tab-indicator"></div>
+                                </div>
+
+                                <!-- tab1  -->
+                                <div data-tab="tab1" class="tab-content active">
+                                    <div class="tab-board-lst">
+                                        tab1 내용 넣어주세요!
+                                    </div>
+                                </div>
+
+                                <!-- tab2  -->
+                                <div data-tab="tab2" class="tab-content">
+                                    <div class="tab-board-lst">
+                                        tab2 내용 넣어주세요!
+                                    </div>
+                                </div>
+
+                                <!-- tab3  -->
+                                <div data-tab="tab3" class="tab-content">
+                                    <div class="tab-board-lst">
+                                        tab3 내용 넣어주세요!
+                                    </div>
+                                </div>
+
+                                <!-- tab4  -->
+                                <div data-tab="tab4" class="tab-content">
+                                    <div class="tab-board-lst">
+                                        tab4 내용 넣어주세요!
+                                    </div>
+                                </div>
+
+                                <!-- tab5  -->
+                                <div data-tab="tab5" class="tab-content">
+                                    <div class="tab-board-lst">
+                                        tab5 내용 넣어주세요!
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- ------------------------------------------ -->
+                        </div>
+                        <div class="wf-content-area">
+                            <p class="heading1">테이블 제목</p>
+                            <table class="wf-table">
+                                <colgroup>
+                                    <col style="width: 20%;">
+                                    <col style="width: 20%;">
+                                    <col style="width: 20%;">
+                                    <col style="width: 20%;">
+                                    <col style="width: 20%;">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>제목</th>
+                                        <th>제목</th>
+                                        <th>제목</th>
+                                        <th>제목</th>
+                                        <th>제목</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <p>항목</p>
+                                        </td>
+                                        <td>
+                                            <p>항목</p>
+                                        </td>
+                                        <td>
+                                            <p>항목</p>
+                                        </td>
+                                        <td>
+                                            <p>길면 말줄임으로 표시됩니다. 길면 말줄임으로 표시됩니다.길면 말줄임으로 표시됩니다.길면 말줄임으로 표시됩니다.길면 말줄임으로
+                                                표시됩니다.길면 말줄임으로 표시됩니다.길면 말줄임으로 표시됩니다.길면 말줄임으로 표시됩니다.길면 말줄임으로 표시됩니다.길면
+                                                말줄임으로 표시됩니다.길면 말줄임으로 표시됩니다.길면 말줄임으로 표시됩니다.</p>
+                                        </td>
+                                        <td>
+                                            <span class="wf-badge1">Primary</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- 페이지네이션 -->
+                            <nav class="wf-pagination-wrap">
+                                <ul class="pagination">
+                                    <li class="page-item">
+                                        <a class="page-link prev" href="#">
+                                            <i class="xi-angle-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item active">
+                                        <a class="page-link" href="#">1</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="#">2</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="#">3</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link next" href="#">
+                                            <i class="xi-angle-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+
+                            <!-- 검색영역 -->
+                            <div class="wf-search-area">
+                                <div class="select-box">
+                                    <select name="" id="">
+                                        <option value="">제목</option>
+                                        <option value="">제목+내용</option>
+                                        <option value="">작성자</option>
+                                    </select>
+                                </div>
+                                <input type="text" placeholder="검색할 내용을 입력해주세요">
+                                <button type="button" class="btn4">
+                                    <i class="xi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="wf-content-area">
+                            <p class="heading1">서치박스</p>
+                            <div class="wf-search-area">
+                                <input type="text" placeholder="검색할 내용을 입력해주세요">
+                                <button type="button" class="btn4">
+                                    <i class="xi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="wf-content-area">
+                            <p class="heading1">체크박스/라디오버튼</p>
+                            <!-- 라디오버튼 -->
+                            <p class="heading1">체크박스</p>
+                            <ul class="checkbox-radio-custom">
+                                <li>
+                                    <input type="checkbox" id="ch1">
+                                    <label for="ch1">남</label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" id="ch2">
+                                    <label for="ch2">여</label>
+                                </li>
+                            </ul>
+                            <br>
+                            <!-- 체크박스 -->
+                            <p class="heading1">라디오버튼</p>
+                            <ul class="checkbox-radio-custom">
+                                <li>
+                                    <input type="radio" name="radio" id="radio1">
+                                    <label for="radio1">남</label>
+                                </li>
+                                <li>
+                                    <input type="radio" name="radio" id="radio2">
+                                    <label for="radio2">여</label>
+                                </li>
+                            </ul>
+                            <br>
+                            <p class="heading1">단일 체크박스/라디오버튼</p>
+                            <span class="checkbox-radio-custom">
+                                <input type="radio" name="radio33" id="radio33">
+                                <label for="radio33"></label>
+                            </span>
+                            <span class="checkbox-radio-custom">
+                                <input type="checkbox" name="chck" id="chck">
+                                <label for="chck"></label>
+                            </span>
+                        </div>
+                    </div>
+                    <!-- =============== 컨텐츠 영역 끝 =============== -->
+                </div>
+                <!-- =============== body 끝 =============== -->
+            </main>
+        </div>
+    </div>
+</body>
+
+</html>

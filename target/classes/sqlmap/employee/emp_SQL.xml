@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.team1.workforest.employee.mapper.EmployeeMapper">
+	<sql id="where1">
+		<if test="keyword!=null and keyword!=''">
+			<if test="searchOption=='empNm'">
+				AND EMP_NM LIKE '%' || #{keyword} || '%'
+			</if>
+			<if test="searchOption=='deptNm'">
+				AND DEPT_NM LIKE '%' || #{keyword} || '%'
+			</if>
+			<if test="searchOption=='workLocation'">
+				AND C2.CMMN_CD_NM LIKE '%' || #{keyword} || '%'
+			</if>
+			<if test="searchOption=='workSeCdNm'">
+				AND C3.CMMN_CD_NM LIKE '%' || #{keyword} || '%'
+			</if>
+		</if>
+	</sql>
+
+	<sql id="where">
+		<if test="keyword!=null and keyword!=''">
+			<if test="searchOption=='empNm'">
+				WHERE 1=1
+				AND A.EMP_NM LIKE '%' || #{keyword} || '%'
+			</if>
+			<if test="searchOption=='deptNm'">
+				, DEPARTMENT B
+				WHERE A.DEPT_NO=B.DEPT_NO
+				AND DEPT_NM LIKE
+				'%' || #{keyword} || '%'
+			</if>
+			<if test="searchOption=='workLocation'">
+				, COMMON_CODE B
+				WHERE A.WORK_LOC_CD =B.CMMN_CD
+				AND
+				B.CMMN_CD_GROUP= 'EMP005'
+				AND B.CMMN_CD_NM LIKE '%' || #{keyword} ||
+				'%'
+			</if>
+			<if test="searchOption=='workSeCdNm'">
+				, COMMON_CODE B
+				WHERE A.WORK_SE_CD =B.CMMN_CD
+				AND
+				B.CMMN_CD_GROUP= 'EMP004'
+				AND B.CMMN_CD_NM LIKE '%' || #{keyword} ||
+				'%'
+			</if>
+		</if>
+	</sql>
+
+	<resultMap type="empVO" id="empMap">
+		<!-- 기존의 필드 매핑 -->
+		<id property="empNo" column="EMP_NO" />
+		<result property="gender" column="성별" />
+		<result property="deptNm" column="DEPT_NM" />
+		<result property="deptNo" column="DEPT_NO" />
+		<result property="rspnsblCtgryNm" column="RSPNSBL_CTGRY_NM" />
+		<result property="empNm" column="EMP_NM" />
+		<result property="proflImageUrl" column="PROFL_IMAGE_URL" />
+		<result property="lxtn" column="LXTN" />
+		<result property="email" column="EMAIL" />
+		<result property="cntcNo" column="CNTC_NO" />
+		<result property="zipCode" column="ZIP_CODE" />
+		<result property="basisAdres" column="BASIS_ADRES" />
+		<result property="detailAdres" column="DETAIL_ADRES" />
+		<result property="ecnyDate" column="ECNY_DATE" />
+		<result property="bdate" column="BDATE" />
+		<result property="position" column="직급" />
+		<result property="workLocation" column="근무지" />
+		<result property="empPw" column="EMP_PW" />
+		<result property="workSeCdNm" column="재직구분" />
+		<collection property="empAuthVOList" resultMap="empAuthMap"></collection>
+	</resultMap>
+
+	<resultMap type="empAuthVO" id="empAuthMap">
+		<result property="empNo" column="EMP_NO" />
+		<result property="auth" column="AUTH" />
+	</resultMap>
+
+	<!-- 내 정보 -->
+	<select id="detail" parameterType="String" resultMap="empMap">
+		SELECT A.*, B.DEPT_NM, C1.CMMN_CD_NM AS 직급, D.RSPNSBL_CTGRY_NM,
+		C2.CMMN_CD_NM AS 근무지, E.AUTH, C3.CMMN_CD_NM AS 재직구분, C4.CMMN_CD_NM AS 성별
+		FROM EMPLOYEE A
+		JOIN DEPARTMENT B ON
+		A.DEPT_NO = B.DEPT_NO
+		JOIN COMMON_CODE C1 ON
+		A.POSITION_CD = C1.CMMN_CD
+		JOIN COMMON_CODE C2 ON A.WORK_LOC_CD =
+		C2.CMMN_CD
+		JOIN COMMON_CODE C3 ON A.WORK_SE_CD = C3.CMMN_CD
+		JOIN COMMON_CODE C4 ON A.GENDER = C4.CMMN_CD
+		JOIN
+		RESPONSIBILITY_CATEGORY D ON A.RSPNSBL_CD = D.RSPNSBL_CD
+		JOIN
+		EMPLOYEE_AUTH E ON A.EMP_NO = E.EMP_NO
+		WHERE A.EMP_NO = #{empNo}
+		AND
+		C1.CMMN_CD_GROUP = 'EMP002' <!-- 직급명 -->
+		AND C2.CMMN_CD_GROUP = 'EMP005' <!-- 근무위치명 -->
+		AND C3.CMMN_CD_GROUP= 'EMP004' <!-- 재직 구분명 -->
+		AND C4.CMMN_CD_GROUP= 'EMP001' <!-- 성별 -->
+	</select>
+
+	<!-- <select id="list" resultMap="empMap"> SELECT A.EMP_NO, A.EMP_NM, A.LXTN, 
+		B.DEPT_NM, A.EMAIL, C1.CMMN_CD_NM AS 직급, D.RSPNSBL_CTGRY_NM, C2.CMMN_CD_NM 
+		AS 근무지 FROM EMPLOYEE A JOIN DEPARTMENT B ON A.DEPT_NO = B.DEPT_NO JOIN COMMON_CODE 
+		C1 ON A.POSITION_CD = C1.CMMN_CD AND C1.CMMN_CD_GROUP = 'EMP002' JOIN COMMON_CODE 
+		C2 ON A.WORK_LOC_CD = C2.CMMN_CD AND C2.CMMN_CD_GROUP = 'EMP005' JOIN RESPONSIBILITY_CATEGORY 
+		D ON A.RSPNSBL_CD = D.RSPNSBL_CD WHERE C1.CMMN_CD_GROUP = 'EMP002' AND C2.CMMN_CD_GROUP 
+		= 'EMP005' </select> -->
+
+
+	<!-- 주소록(사원 목록) -->
+	<select id="list" parameterType="hashMap" resultType="empVO">
+		WITH T AS (
+		SELECT
+		ROW_NUMBER() OVER (ORDER BY A.EMP_NO) AS RNUM,
+		A.EMP_NO, A.EMP_NM, A.LXTN, B.DEPT_NM,
+		A.EMAIL, A.CNTC_NO,
+		C1.CMMN_CD_NM AS POSITION, D.RSPNSBL_CTGRY_NM,
+		C2.CMMN_CD_NM AS
+		WORK_LOCATION,
+		C3.CMMN_CD_NM AS WORK_SE_CD
+		FROM
+		EMPLOYEE A
+		JOIN DEPARTMENT
+		B ON A.DEPT_NO = B.DEPT_NO
+		JOIN COMMON_CODE C1 ON A.POSITION_CD =
+		C1.CMMN_CD AND C1.CMMN_CD_GROUP = 'EMP002'
+		JOIN COMMON_CODE C2 ON
+		A.WORK_LOC_CD = C2.CMMN_CD AND C2.CMMN_CD_GROUP = 'EMP005'
+		JOIN
+		COMMON_CODE C3 ON A.WORK_SE_CD = C3.CMMN_CD AND C3.CMMN_CD_GROUP =
+		'EMP004'
+		JOIN RESPONSIBILITY_CATEGORY D ON A.RSPNSBL_CD = D.RSPNSBL_CD
+		WHERE
+		C1.CMMN_CD_GROUP = 'EMP002'
+		AND
+		C2.CMMN_CD_GROUP = 'EMP005'
+		AND
+		C3.CMMN_CD_GROUP = 'EMP004'
+		<include refid="where1"></include>
+		)
+		SELECT RNUM, EMP_NO, EMP_NM, LXTN, CNTC_NO, DEPT_NM, EMAIL, POSITION,
+		RSPNSBL_CTGRY_NM,
+		WORK_LOCATION, WORK_SE_CD
+		FROM T
+		WHERE RNUM BETWEEN
+		(#{currentPage}* 10) - (10 - 1) AND (#{currentPage} *
+		10)
+		ORDER BY RNUM
+	</select>
+
+
+	<select id="getTotal" resultType="int">
+		SELECT COUNT(*)
+		FROM EMPLOYEE
+		WHERE 1 = 1
+	</select>
+
+	<select id="getkeywordTotal" parameterType="hashMap"
+		resultType="int">
+		SELECT COUNT(*)
+		FROM EMPLOYEE A
+		<include refid="where"></include>
+	</select>
+
+	<!-- 내 정보 수정 -->
+	<update id="modDetail" parameterType="empVO">
+		UPDATE EMPLOYEE
+		SET
+		PROFL_IMAGE_URL=#{proflImageUrl}, EMAIL=#{email}, CNTC_NO=#{cntcNo},
+		ZIP_CODE=#{zipCode},
+		BASIS_ADRES=#{basisAdres},
+		DETAIL_ADRES=#{detailAdres}
+		WHERE EMP_NO=#{empNo}
+	</update>
+
+	<!-- 비밀번호 수정 -->
+	<update id="modPass" parameterType="empVO">
+		UPDATE EMPLOYEE
+		SET
+		EMP_PW=#{empPw}
+		WHERE EMP_NO=#{empNo}
+	</update>
+
+	<!-- 조직도(jstree) -->
+	<!-- <select id="treeAjax" resultType="deptVO"> -->
+	<!-- SELECT ROWNUM RNUM, DEPT_NO, DEPT_NM, UPPER_DEPT, LEVEL AS LVL -->
+	<!-- FROM DEPARTMENT -->
+	<!-- START WITH UPPER_DEPT IS NULL -->
+	<!-- CONNECT BY PRIOR DEPT_NO= UPPER_DEPT -->
+	<!-- ORDER BY LVL, DEPT_NO -->
+	<!-- </select> -->
+	<select id="treeAjax" resultType="deptVO">
+		WITH T AS (
+		SELECT
+		ROWNUM RNUM,
+		D.DEPT_NO,
+		D.DEPT_NM,
+		D.UPPER_DEPT,
+		E.EMP_NM,
+		C1.CMMN_CD_NM AS POSITION,
+		R.RSPNSBL_CTGRY_NM
+		FROM
+		DEPARTMENT D
+		LEFT JOIN EMPLOYEE E ON D.DEPT_NO =
+		E.DEPT_NO
+		LEFT JOIN COMMON_CODE C1 ON E.POSITION_CD = C1.CMMN_CD AND
+		C1.CMMN_CD_GROUP = 'EMP002'
+		LEFT JOIN RESPONSIBILITY_CATEGORY R ON
+		E.RSPNSBL_CD = R.RSPNSBL_CD
+		START WITH D.UPPER_DEPT IS NULL
+		CONNECT BY
+		PRIOR D.DEPT_NO = D.UPPER_DEPT
+		ORDER SIBLINGS BY D.DEPT_NO
+		)
+		SELECT
+		DEPT_NO,
+		DEPT_NM,
+		UPPER_DEPT,
+		EMP_NM,
+		POSITION,
+		RSPNSBL_CTGRY_NM
+		FROM
+		T
+	</select>
+	<!-- 비밀번호 찾기 -->
+	<select id="getMemberPass" parameterType="empVO"
+		resultType="int">
+		SELECT COUNT(*) FROM EMPLOYEE
+		WHERE EMP_NO= #{empNo} AND
+		EMAIL= #{email}
+	</select>
+
+	<!-- 임시비밀번호 진짜비밀번호로 설정 -->
+	<update id="updatePass" parameterType="empVO">
+		UPDATE EMPLOYEE
+		SET
+		EMP_PW=#{empPw}
+		WHERE EMP_NO=#{empNo} AND EMAIL= #{email}
+	</update>
+
+	<!-- 관리자 모드////////////////////////////////////////// -->
+	<!-- 사원 등록 -->
+	<insert id="addEmp" parameterType="empVO">
+
+		INSERT INTO EMPLOYEE (EMP_NO, EMP_NM, GENDER, BDATE, CNTC_NO, EMAIL,
+		ECNY_DATE, LXTN, WORK_SE_CD, WORK_LOC_CD, DEPT_NO, POSITION_CD,
+		RSPNSBL_CD, EMP_PW, ENABLED)
+		VALUES (#{empNo}, #{empNm}, #{gender},
+		#{bdate}, #{cntcNo}, #{email},
+		#{ecnyDate}, #{lxtn}, #{workSeCd},
+		#{workLocCd}, #{deptNo},
+		#{positionCd}, #{rspnsblCd}, #{empPw},
+		#{enabled})
+		<!-- 사원 등록 - 권한 부여 -->
+	</insert>
+	<insert id="addEmpAuth" parameterType="empVO">
+		INSERT INTO EMPLOYEE_AUTH
+		(EMP_NO, AUTH)
+		VALUES (#{empNo}, 'ROLE_MEMBER')
+	</insert>
+
+	<!-- 상급자사번구하기 -->
+	<select id="findSuperEmpNo" parameterType="empVO"
+		resultType="String">
+		SELECT EMP_NO
+		FROM EMPLOYEE
+		WHERE DEPT_NO = #{deptNo} AND
+		RSPNSBL_CD NOT IN ('1')
+	</select>
+
+	<!-- 재직 구분 변경 -->
+	<update id="updWorkSeCd" parameterType="empVO">
+		UPDATE EMPLOYEE
+		SET
+		WORK_SE_CD=#{workSeCd} WHERE EMP_NO= #{empNo}
+	</update>
+
+	<update id="updEnabled" parameterType="empVO">
+		UPDATE EMPLOYEE SET
+		enabled='0' WHERE EMP_NO= #{empNo}
+	</update>
+
+	<update id="updEnabled2" parameterType="empVO">
+		UPDATE EMPLOYEE SET
+		enabled='1' WHERE EMP_NO= #{empNo}
+	</update>
+
+
+	<!-- 개인연락처 셀렉 -->
+	<select id="findCntcNo" parameterType="empVO" resultType="empVO">
+		SELECT EMP_NM || '(' || DEPT_NM || ')' AS EMP_NM, REPLACE(CNTC_NO, '-', '') AS CNTC_NO
+		FROM EMPLOYEE
+		INNER JOIN DEPARTMENT D ON EMPLOYEE.DEPT_NO = D.DEPT_NO
+		WHERE EMP_NM LIKE '%' || #{empNm} || '%'
+
+	</select>
+
+
+
+
+
+
+
+
+
+
+
+</mapper>

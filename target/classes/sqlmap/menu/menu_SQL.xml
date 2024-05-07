@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.team1.workforest.menu.mapper.MenuMapper">
+	
+	
+	<select id="selectMenu" resultType="menuVO">
+		SELECT 
+            MENU_NO
+          , MENU_NM
+          , VALID_YN_CD
+          , PAGE_URL
+          , UPPER_MENU
+          , MENU_ICON
+      	FROM
+          	MENU		
+	</select>
+            
+
+	<select id="findGlance" parameterType="menuVO" resultType="glanceVO">
+		SELECT
+			  GLAN_NO
+			, USER_SETUP_NO
+			, MENU_NO
+			, GLAN_NM
+		FROM
+			GLANCE
+		WHERE
+			1=1
+		AND GLAN_NM=#{glanNm}
+		AND USER_SETUP_NO=#{empNo}		
+	</select>
+	
+	<delete id="deleteGlance" parameterType="menuVO">
+		DELETE 
+		FROM
+			GLANCE
+		WHERE
+			1=1
+		AND GLAN_NM=#{glanNm}
+		AND USER_SETUP_NO=#{empNo}	
+	</delete>
+
+	<insert id="insertGlance" parameterType="menuVO">
+		INSERT INTO 
+			GLANCE(
+			  GLAN_NO
+			, USER_SETUP_NO
+			, MENU_NO
+			, GLAN_NM
+			)
+		VALUES(
+			 SEQ_GLANCE.NEXTVAL
+			,#{empNo}
+			,#{menuNo}
+			,#{glanNm}
+		)	
+	</insert>
+	
+	
+	<select id="selectGlance" parameterType="menuVO" resultType="menuVO">
+		SELECT
+			  A.GLAN_NO
+			, A.USER_SETUP_NO AS EMP_NO
+			, A.MENU_NO
+			, A.GLAN_NM
+			
+			, B.MENU_NM
+			, B.PAGE_URL			
+			, B.MENU_ICON
+		FROM
+		 	GLANCE A, MENU B
+		WHERE
+			1=1 
+		AND	A.USER_SETUP_NO=#{empNo}
+		AND A.MENU_NO=B.MENU_NO
+		AND GLAN_NM=#{glanNm}						
+	</select>
+	
+	<select id="getEmployeeUserSetup" parameterType="menuVO" resultType="empUserSetupVO">
+		SELECT 
+			  USER_SETUP_NO
+			, EMP_NO
+			, CAR_RESVE_CLDR_SETUP_NO
+			, MTG_ROOM_RESVE_CLDR_SETUP_NO
+			, RESRCES_LEND_CLDR_SETUP_NO
+		FROM
+			EMPLOYEE_USER_SETUP
+		WHERE
+			1=1
+		AND	USER_SETUP_NO =#{empNo}
+		AND EMP_NO =#{empNo}		
+	</select>
+	
+	<insert id="insertEmployeeUserSetup" parameterType="menuVO">
+		INSERT INTO
+			EMPLOYEE_USER_SETUP(
+				  USER_SETUP_NO
+				, EMP_NO
+				, CAR_RESVE_CLDR_SETUP_NO
+				, MTG_ROOM_RESVE_CLDR_SETUP_NO
+				, RESRCES_LEND_CLDR_SETUP_NO
+			)
+		VALUES(
+			 #{empNo}
+			,#{empNo}
+			,'1'
+			,'1'
+			,'1'
+		)	
+	</insert>
+	
+	
+	<select id="selectEmail" parameterType="empVO" resultType="empVO">
+		SELECT 
+			  A.EMP_NO
+			, A.DEPT_NO
+			, A.EMP_NM
+			, A.EMAIL
+			, A.CNTC_NO
+			, C.CMMN_CD_NM AS POSITION
+			, D.RSPNSBL_CTGRY_NM
+			, PROFL_IMAGE_URL
+		FROM 
+			EMPLOYEE A, DEPARTMENT B, COMMON_CODE C, RESPONSIBILITY_CATEGORY D
+		WHERE 
+			1=1
+		AND	EMP_NM LIKE '%'||#{empNm}||'%'
+		AND A.DEPT_NO=B.DEPT_NO
+		AND A.POSITION_CD = C.CMMN_CD
+		AND A.RSPNSBL_CD = D.RSPNSBL_CD
+		AND C.CMMN_CD_GROUP = 'EMP002'	
+	</select>
+	
+	
+	
+</mapper>

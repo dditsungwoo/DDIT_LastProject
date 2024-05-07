@@ -1,0 +1,31 @@
+@charset "UTF-8";
+/* 예약자 박스 */
+#rsvEmpNameBox {
+    display: none;
+}
+/* 반납 상태 박스 */
+#rturnSttsBox {
+    display: none;
+}
+/* 수정 관련 버튼 */
+#updateBtnGroup {
+    display: none;
+}
+#rsvSTime,
+#rsvETime {
+    min-width: 120px;
+}
+
+.allDaySpan {
+    width: 60px;
+}
+.dateBox {
+    min-width: max-content;
+}
+
+#carInfoBox > p {
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 10px;
+    text-align: center;
+}

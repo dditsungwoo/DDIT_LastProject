@@ -1,0 +1,688 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.duty.mapper.DutyMapper">
+
+	
+
+	<!--  받은 일감 전체 리스트 출력 -->
+	<select id="getDutyList" parameterType="hashMap" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.getDutyList -->
+		WITH T AS (    
+		    SELECT ROW_NUMBER() OVER(ORDER BY F.CLOS_DATE ASC) RNUM
+		    	   , COUNT(1) OVER() AS TOTAL
+		    	   , F.* 
+		    FROM (
+		     SELECT 
+ 					  A.DUTY_NO
+ 					, A.EMP_NO
+ 					, A.PRGS_RATE
+ 					, A.CNFIRM_DATE
+ 					, B.DUTY_SJ
+ 					, B.DUTY_CN
+ 					, B.SEND_DATE
+ 					, B.CLOS_DATE
+ 					, B.CLOS_TIME
+ 					, C.EMP_NM AS EMP_NM
+ 					, E.CMMN_CD_NM AS POSITION
+			       	, F.RSPNSBL_CTGRY_NM AS RSPNSBL
+ 					<if test="keyword!=null and keyword!=''">
+ 					, #{keyword} AS KEYWORD
+ 					</if>
+ 			FROM 
+ 					 DUTY_RECIPIENT A 
+ 					,     	  DUTY B 
+ 					,     EMPLOYEE C 
+ 					,   DEPARTMENT D
+ 					, COMMON_CODE E
+					, RESPONSIBILITY_CATEGORY F
+		   WHERE 	 1=1 
+		         AND A.DUTY_NO= B.DUTY_NO 
+		         AND A.EMP_NO=#{empNo}
+ 				 AND B.EMP_NO=C.EMP_NO 
+ 				 AND C.DEPT_NO=D.DEPT_NO
+ 				 AND E.CMMN_CD_GROUP='EMP002'
+            	 AND E.CMMN_CD=C.POSITION_CD
+            	 AND F.RSPNSBL_CD=C.RSPNSBL_CD
+				<if test="keyword!=null and keyword!=''">
+				    AND 
+				        <choose>
+				            <when test="keyword==10 or keyword==0">
+				                A.PRGS_RATE = 10
+				            </when>
+						    <when test="keyword.length == 8">
+						       	B.CLOS_DATE = #{keyword}
+						    </when>
+				            <otherwise>
+				                A.PRGS_RATE BETWEEN 1 AND 9
+				            </otherwise>
+				        </choose>				   
+				</if>					
+		     ) F
+		) 
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN  (#{currentPage}*4) - (4-1) AND (#{currentPage}*4)  
+		
+	</select>
+
+	
+	<!-- 원형 차트를 위한 데이터 가져오기 -->
+	<select id="getPieChart" parameterType="dutyVO" resultType="DutyRecipientVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.getPieChart -->
+		SELECT
+		     PRGS_CATE
+		    ,COUNT(*) AS PRGS_RATE
+		    ,PRGS_CATE_NAME
+		FROM (
+    	SELECT
+        	CASE
+	            WHEN PRGS_RATE = 0 THEN '0'
+	            WHEN PRGS_RATE = 1 THEN '1'
+	            WHEN PRGS_RATE BETWEEN 2 AND 9 THEN '2~9'
+	            WHEN PRGS_RATE = 10 THEN '10'
+        	END AS PRGS_CATE,
+        	CASE
+	            WHEN PRGS_RATE = 0 THEN '중단'
+	            WHEN PRGS_RATE = 1 THEN '준비중'
+	            WHEN PRGS_RATE BETWEEN 2 AND 9 THEN '진행중'
+	            WHEN PRGS_RATE = 10 THEN '완료'
+        	END AS PRGS_CATE_NAME
+        	
+    	FROM
+        	DUTY_RECIPIENT
+    	WHERE
+        	EMP_NO=#{empNo}
+		) SUBQUERY
+		GROUP BY		
+    		PRGS_CATE, PRGS_CATE_NAME
+	
+	</select>
+
+	<!-- 오늘 할일 리스트 가져오기 -->
+	<select id="todayDoList" parameterType="dutyVO" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.todayDoList -->
+		WITH T AS (    
+		    SELECT ROW_NUMBER() OVER(ORDER BY F.CLOS_DATE ASC) RNUM
+		    	   , COUNT(1) OVER() AS TOTAL
+		    	   , F.* 
+		FROM (
+		
+		SELECT
+			  A.DUTY_NO
+			, A.DUTY_SJ
+			, A.CLOS_DATE
+			, A.CLOS_TIME
+			, B.PRGS_RATE
+			, B.EMP_NO
+			<if test="keyword != null and keyword != ''">
+			, TO_CHAR(SYSDATE, 'YYYYMMDD')+#{keyword} AS SEND_DATE
+			</if>
+			<if test="keyword == null or keyword == ''">
+			, TO_CHAR(SYSDATE, 'YYYYMMDD') AS SEND_DATE
+			</if>
+		FROM 
+			  DUTY A
+			, DUTY_RECIPIENT B
+		WHERE 
+			1=1
+		
+			<if test="keyword != null and keyword != ''">
+    		 AND TO_DATE(A.CLOS_DATE, 'yyyy-MM-dd') = TRUNC(SYSDATE) +#{keyword}
+			</if>
+    		<if test="keyword == null or keyword == ''">
+        	 AND TO_DATE(A.CLOS_DATE, 'yyyy-MM-dd') = TRUNC(SYSDATE)
+    		</if>
+			AND B.EMP_NO=#{empNo}
+			AND A.DUTY_NO=B.DUTY_NO
+			AND B.PRGS_RATE != 10
+	     ) F
+		) 
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN  1 AND 5
+		
+	</select>
+	
+	<!-- 오늘 할일 클릭하면 완료되도록 -->
+	<update id="clickAndDone" parameterType="dutyVO" >
+		<!--com.team1.workforest.duty.mapper.DutyMapper.clickAndDone -->
+		UPDATE 
+			DUTY_RECIPIENT
+		SET
+			PRGS_RATE=10
+		WHERE
+			EMP_NO=#{empNo}
+		AND DUTY_NO=#{dutyNo}			
+	</update>
+	
+	
+	<!--  이번주의 업무들 리스트 -->
+	<select id="weekDoList" parameterType="dutyVO" resultType="dutyVO">	
+		<!--com.team1.workforest.duty.mapper.DutyMapper.weekDoList -->	
+		 WITH DATERANGE AS (
+		    SELECT 
+		        TRUNC(SYSDATE, 'IW') + LEVEL - 1 AS CLOS_DATE,
+		        EXTRACT(YEAR FROM TRUNC(SYSDATE, 'IW') + LEVEL - 1) AS YEAR,
+		        EXTRACT(MONTH FROM TRUNC(SYSDATE, 'IW') + LEVEL - 1) AS MONTH,
+		        TO_CHAR(TRUNC(SYSDATE, 'IW') + LEVEL - 1, 'W') AS WEEK_OF_MONTH,
+		        TO_CHAR(TRUNC(SYSDATE, 'IW') + LEVEL - 1, 'DY') AS DAY_OF_WEEK
+		    FROM 
+		        DUAL
+		    CONNECT BY 
+		        LEVEL BETWEEN 1 AND 5
+		)
+		SELECT
+		    TO_CHAR(DR.CLOS_DATE, 'YYYYMMDD') AS CLOS_DATE,
+		    DR.YEAR,
+		    DR.MONTH,
+		    DR.WEEK_OF_MONTH,
+		    DR.YEAR || '년 ' || DR.MONTH || '월 ' || (DR.WEEK_OF_MONTH ) || '번째 주' AS KEYWORD,
+		    DR.DAY_OF_WEEK AS WEEK_DAY,
+		    NVL(SUM(CASE WHEN R.EMP_NO = #{empNo} AND D.DUTY_NO IS NOT NULL THEN 1 ELSE 0 END), 0) AS DUTY_SJ
+		FROM
+		    DATERANGE DR
+		LEFT JOIN
+		    DUTY D ON DR.CLOS_DATE = D.CLOS_DATE
+		LEFT JOIN
+		    DUTY_RECIPIENT R ON D.DUTY_NO = R.DUTY_NO
+		GROUP BY
+		    TO_CHAR(DR.CLOS_DATE, 'YYYYMMDD'), DR.YEAR, DR.MONTH, DR.WEEK_OF_MONTH, DR.DAY_OF_WEEK
+		ORDER BY
+		    TO_CHAR(DR.CLOS_DATE, 'YYYYMMDD')
+	</select>
+	
+	<!--  상세 업무 디테일 -->
+	<select id="dutyDetail" parameterType="dutyVO" resultType="dutyVO">
+	     <!--com.team1.workforest.duty.mapper.DutyMapper.dutyDetail-->	
+	     SELECT
+			  A.DUTY_NO
+			, A.EMP_NO
+            , C.EMP_NM AS SENDER
+			, A.DUTY_SJ
+			, A.DUTY_CN
+			, A.SEND_DATE
+			, A.CLOS_DATE
+			, A.ATCHMNFL_NO
+			, A.CLOS_TIME
+			, B.PRGS_RATE 
+			, B.CNFIRM_DATE
+            , B.EMP_NO AS RECIPIENT
+            , C.EMP_NM||' '||D.CMMN_CD_NM AS COL1
+            , A.BASE64
+            , D.CMMN_CD_NM AS POSITION
+			, E.RSPNSBL_CTGRY_NM AS RSPNSBL
+		FROM 
+			DUTY A, DUTY_RECIPIENT B ,EMPLOYEE C ,COMMON_CODE D, RESPONSIBILITY_CATEGORY E 
+			
+		WHERE
+			 1=1
+		AND	A.DUTY_NO=#{dutyNo}
+		AND B.EMP_NO=#{empNo}
+		AND A.DUTY_NO=B.DUTY_NO
+        AND A.EMP_NO=C.EMP_NO
+        AND C.POSITION_CD=D.CMMN_CD
+        AND D.CMMN_CD_GROUP='EMP002'
+        AND E.RSPNSBL_CD=C.RSPNSBL_CD   
+	</select>	
+
+	<!-- 업무의 진행률 업데이트 -->
+	<update id="detailPrgsUpdate" parameterType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.detailPrgsUpdate-->	
+		UPDATE 
+			DUTY_RECIPIENT
+		SET
+			PRGS_RATE=#{prgsRate}
+		WHERE 
+			1=1
+		AND DUTY_NO=#{dutyNo}
+		AND EMP_NO=#{empNo}		
+	</update>
+	
+	<!--/////////////////////// SENDER(임무를 부여하는 사람)의 페이지//////////////////// -->
+	
+	<!--관리하는 사원의 업무 통계 (왼쪽위)  -->
+	<select id="senderChart1" parameterType="dutyVO" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.senderChart1-->
+		SELECT
+		     EMP_NO
+		    ,EMP_NM
+		    ,COALESCE(MAX(CASE WHEN PRGS_RATE = '중지' THEN PRGS_RATE || ' ' || TOTAL END), '') AS col1
+		    ,COALESCE(MAX(CASE WHEN PRGS_RATE = '대기' THEN PRGS_RATE || ' ' || TOTAL END), '') AS col2
+		    ,COALESCE(MAX(CASE WHEN PRGS_RATE = '진행' THEN PRGS_RATE || ' ' || TOTAL END), '') AS col3
+		    ,COALESCE(MAX(CASE WHEN PRGS_RATE = '완료' THEN PRGS_RATE || ' ' || TOTAL END), '') AS col4
+		    ,PROFL_IMAGE_URL
+		    ,POSITION
+		    ,RSPNSBL
+		FROM (
+		    SELECT
+		         C.EMP_NM AS EMP_NM
+		        , A.EMP_NO
+		        , C.PROFL_IMAGE_URL
+		        , D.CMMN_CD_NM AS POSITION
+			    , E.RSPNSBL_CTGRY_NM AS RSPNSBL	       
+		        ,CASE
+		            WHEN PRGS_RATE = 0 THEN '중지'
+		            WHEN PRGS_RATE = 1 THEN '대기'
+		            WHEN PRGS_RATE BETWEEN 2 AND 9 THEN '진행'
+		            WHEN PRGS_RATE = 10 THEN '완료'
+		        END AS PRGS_RATE
+		        ,COUNT(*) OVER (PARTITION BY A.EMP_NO, PRGS_RATE) AS TOTAL
+		    FROM
+		        DUTY_RECIPIENT A
+		        JOIN DUTY B ON A.DUTY_NO = B.DUTY_NO
+		        JOIN EMPLOYEE C ON A.EMP_NO = C.EMP_NO
+		        JOIN COMMON_CODE D ON C.POSITION_CD = D.CMMN_CD
+		        JOIN RESPONSIBILITY_CATEGORY E ON E.RSPNSBL_CD=C.RSPNSBL_CD
+		    WHERE
+		        C.SUPRR_EMP_NO = #{empNo}
+		        AND D.CMMN_CD_GROUP = 'EMP002'
+		)
+		GROUP BY
+		     EMP_NO
+		    ,EMP_NM
+		    ,PROFL_IMAGE_URL
+		    ,POSITION
+		    ,RSPNSBL
+		ORDER BY
+		    EMP_NO
+	</select>
+	
+	
+	<!-- 관리하는 사원의 오늘할일 (중앙 위)-->
+	<select id="senderChart2" parameterType="dutyVO" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.senderChart2-->
+		WITH T AS (    
+			    SELECT ROW_NUMBER() OVER(ORDER BY F.CLOS_DATE DESC) RNUM
+			    	   , COUNT(1) OVER() AS TOTAL
+			    	   , F.* 
+			FROM (
+			
+			SELECT
+				  A.DUTY_NO
+				, A.DUTY_SJ
+				, A.CLOS_DATE
+				, A.CLOS_TIME
+				, B.PRGS_RATE
+				, B.EMP_NO
+	            , C.EMP_NM AS EMP_NM
+				, TO_CHAR(SYSDATE, 'YYYYMMDD') AS SEND_DATE
+				, D.CMMN_CD_NM AS POSITION
+			    , E.RSPNSBL_CTGRY_NM AS RSPNSBL
+			FROM 
+				  DUTY A
+				, DUTY_RECIPIENT B
+	            , EMPLOYEE C
+	            , COMMON_CODE D
+	            , RESPONSIBILITY_CATEGORY E 
+	            
+			WHERE 
+				1=1
+	            AND TO_DATE(A.CLOS_DATE, 'yyyy-MM-dd') = TRUNC(SYSDATE)
+				AND C.SUPRR_EMP_NO=#{empNo}
+				AND A.DUTY_NO=B.DUTY_NO
+				AND B.PRGS_RATE != 10
+	            AND B.EMP_NO=C.EMP_NO
+	            AND C.POSITION_CD = D.CMMN_CD
+	            AND D.CMMN_CD_GROUP='EMP002'
+	            AND E.RSPNSBL_CD=C.RSPNSBL_CD
+		     ) F
+			) 
+			SELECT T.*
+			FROM T
+			WHERE T.RNUM BETWEEN  1 AND 7		
+	</select>
+	
+	
+	
+	<!-- 관리하는 사원의 할일을 달력으로(오른쪽 위) -->
+	<select id="senderChart3" parameterType="dutyVO" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.senderChart3-->
+		SELECT 
+		    A.DUTY_NO
+		    , B.EMP_NO
+		    , C.EMP_NM 
+		    , A.DUTY_SJ
+		    , A.DUTY_CN
+		    , A.SEND_DATE
+		    , A.CLOS_DATE
+		    , A.ATCHMNFL_NO
+		    , A.CLOS_TIME
+		    , B.PRGS_RATE
+		FROM 
+		    DUTY A, DUTY_RECIPIENT B, EMPLOYEE C , COMMON_CODE D
+		WHERE
+		            1=1
+		        AND C.SUPRR_EMP_NO =#{empNo}
+		        AND A.DUTY_NO= B.DUTY_NO
+		        AND B.EMP_NO= C.EMP_NO
+		        AND C.POSITION_CD=D.CMMN_CD
+		        AND D.CMMN_CD_GROUP='EMP002'    
+	</select>
+	
+
+
+	<!-- 관리자용 받은 일감 전체 리스트 출력 -->
+	<select id="getDutyListForSender" parameterType="hashMap" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.getDutyListForSender-->
+		WITH T AS (    
+		    SELECT ROW_NUMBER() OVER(ORDER BY F.CLOS_DATE ASC) RNUM
+		    	   , COUNT(1) OVER() AS TOTAL
+		    	   , F.* 
+		    FROM (
+		     SELECT 
+ 					  A.DUTY_NO
+ 					, A.EMP_NO
+ 					, A.PRGS_RATE
+ 					, A.CNFIRM_DATE
+ 					, B.DUTY_SJ
+ 					, B.DUTY_CN
+ 					, B.SEND_DATE
+ 					, B.CLOS_DATE
+ 					, B.CLOS_TIME
+ 					, E.CMMN_CD_NM AS POSITION
+			        , F.RSPNSBL_CTGRY_NM AS RSPNSBL
+			        , C.EMP_NM AS COL1					
+ 					, D.DEPT_NM||' '||C.EMP_NM AS EMP_NM
+ 					<if test="keyword!=null and keyword!=''">
+ 					, #{keyword} AS KEYWORD					
+ 					</if>
+ 			FROM 
+ 					 DUTY_RECIPIENT A 
+ 					,     	   DUTY B 
+ 					,      EMPLOYEE C 
+ 					,    DEPARTMENT D
+ 					,   COMMON_CODE E
+			        , RESPONSIBILITY_CATEGORY F
+ 					
+		   WHERE 	 1=1 
+		         AND A.DUTY_NO= B.DUTY_NO 
+		         AND B.EMP_NO=#{empNo}
+ 				 AND A.EMP_NO=C.EMP_NO 
+ 				 AND C.DEPT_NO=D.DEPT_NO
+				<if test="keyword!=null and keyword!=''">
+				AND A.EMP_NO=#{keyword}			      		   
+				</if>
+				AND E.CMMN_CD_GROUP='EMP002'
+                AND E.CMMN_CD=C.POSITION_CD
+                AND F.RSPNSBL_CD=C.RSPNSBL_CD
+									
+		     ) F
+		) 
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN  (#{currentPage}*4) - (4-1) AND (#{currentPage}*4)  
+		
+	</select>
+
+
+	<!-- 관리자용 받은 일감 (읽음 또는 읽지 않음 나타내기) -->
+	<select id="getDutyListCnfirmDate" parameterType="hashMap" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.getDutyListCnfirmDate-->
+		WITH T AS (    
+		    SELECT ROW_NUMBER() OVER(ORDER BY F.CLOS_DATE ASC) RNUM
+		    	   , COUNT(1) OVER() AS TOTAL
+		    	   , F.* 
+		    FROM (
+		     SELECT 
+ 					  A.DUTY_NO
+ 					, A.EMP_NO
+ 					, A.PRGS_RATE
+ 					, A.CNFIRM_DATE
+ 					, B.DUTY_SJ
+ 					, B.DUTY_CN
+ 					, B.SEND_DATE
+ 					, B.CLOS_DATE
+ 					, B.CLOS_TIME
+ 					, E.CMMN_CD_NM AS POSITION
+			        , F.RSPNSBL_CTGRY_NM AS RSPNSBL
+			        , C.EMP_NM AS COL1	
+ 					, D.DEPT_NM||' '||C.EMP_NM AS EMP_NM
+ 					<if test="keyword!=null and keyword!=''">
+ 					, #{keyword} AS KEYWORD
+ 					</if>
+ 			FROM 
+ 					 DUTY_RECIPIENT A 
+ 					,     	   DUTY B 
+ 					,      EMPLOYEE C 
+ 					,    DEPARTMENT D
+ 					,   COMMON_CODE E
+			        , RESPONSIBILITY_CATEGORY F 					
+ 					
+		   WHERE 	 1=1 
+		         AND A.DUTY_NO= B.DUTY_NO 
+		         AND B.EMP_NO=#{empNo}
+ 				 AND A.EMP_NO=C.EMP_NO 
+ 				 AND C.DEPT_NO=D.DEPT_NO
+				<if test="keyword != null">				  
+				    <if test="keyword == 0">
+				 AND A.CNFIRM_DATE='0'
+				    </if>
+				    <if test="keyword != 0">
+				 AND A.CNFIRM_DATE NOT IN ('0')
+				    </if>
+				</if>
+				<if test="keyword == null">	
+				 AND A.CNFIRM_DATE='0'	
+				</if>
+				AND E.CMMN_CD_GROUP='EMP002'
+                AND E.CMMN_CD=C.POSITION_CD
+                AND F.RSPNSBL_CD=C.RSPNSBL_CD			
+		     ) F
+		) 
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN  (#{currentPage}*4) - (4-1) AND (#{currentPage}*4)  	
+	</select>
+	
+	
+	<!--  디테일로 들어갈때 읽음으로 표시해주는 쿼리 -->
+	<update id="updateCnfirmDate" parameterType="dutyVO" >
+		<!--com.team1.workforest.duty.mapper.DutyMapper.updateCnfirmDate-->
+		UPDATE 
+			DUTY_RECIPIENT
+		SET
+			CNFIRM_DATE =TO_CHAR(SYSDATE, 'YYYYMMDD')
+		WHERE 
+			1=1
+		AND	EMP_NO=#{recipient}
+		AND DUTY_NO=#{dutyNo}	
+				
+	</update>
+	
+	<!--관리자용  상세 업무 디테일 -->
+	<select id="senderDetail" parameterType="dutyVO" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.senderDetail-->
+	     SELECT
+			  A.DUTY_NO
+			, A.EMP_NO
+            , C.EMP_NM||' '||D.CMMN_CD_NM AS SENDER
+			, A.DUTY_SJ
+			, A.DUTY_CN
+			, A.SEND_DATE
+			, A.CLOS_DATE
+			, A.ATCHMNFL_NO
+			, A.CLOS_TIME
+			, B.PRGS_RATE 
+			, B.CNFIRM_DATE
+            , B.EMP_NO AS RECIPIENT
+            , A.BASE64
+            
+		FROM 
+			DUTY A, DUTY_RECIPIENT B ,EMPLOYEE C ,COMMON_CODE D
+		WHERE
+			 1=1
+		AND	A.DUTY_NO=#{dutyNo}
+		AND B.EMP_NO=#{empNo}
+		AND A.DUTY_NO=B.DUTY_NO
+        AND B.EMP_NO=C.EMP_NO
+        AND C.POSITION_CD=D.CMMN_CD
+        AND D.CMMN_CD_GROUP='EMP002'   
+	</select>		
+	
+	<!--  duty 테이블에 insert -->
+	<insert id="insertDuty"  parameterType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.insertDuty-->
+		<selectKey resultType="String" order="BEFORE" keyProperty="dutyNo">
+			SELECT 
+    			'D' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(DUTY_NO, 2))) + 1, 1), 4, '0') 
+			 FROM 
+   				 DUTY
+		</selectKey>	
+		INSERT INTO 
+			DUTY(
+			  DUTY_NO
+		  	, EMP_NO
+		  	, DUTY_SJ
+		  	, DUTY_CN
+		  	, SEND_DATE
+		  	, CLOS_DATE
+		  	, ATCHMNFL_NO
+		  	, CLOS_TIME
+		  	, BASE64
+		  	) 
+		VALUES(
+			 #{dutyNo}
+			,#{empNo}
+			,#{dutySj}
+			,#{dutyCn}			
+			,TO_CHAR(SYSDATE, 'YYYYMMDD')
+			,TO_CHAR(TO_DATE(#{closDate}, 'YYYY-MM-DD'), 'YYYYMMDD')
+			,#{atchmnflNo}
+			,#{closTime}
+			,#{base64}
+		)
+	</insert>
+	
+		<!-- 마지막 insert 된 duty를 가져오는 쿼리 -->
+	<select id="selectLast" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.selectLast-->
+   		SELECT 
+   			'D' || LPAD(NVL(MAX(TO_NUMBER(SUBSTR(DUTY_NO, 2))), 1), 4, '0') AS DUTY_NO
+        FROM 
+        	DUTY
+	</select>
+	
+	
+	<!--  dutyRecipient 테이블에 insert -->
+	<insert id="insertDutyRecipient" parameterType="dutyRecipientVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.insertDutyRecipient-->
+		INSERT INTO
+			DUTY_RECIPIENT(
+				  DUTY_NO
+				, EMP_NO			
+			)
+		VALUES(
+			 #{dutyNo}
+			,#{empNo}
+		)
+	</insert>
+	
+	
+	<!--  dutyRecipient 진행률을 0으로 (삭제) -->	
+	<update id="deleteDuty" parameterType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.deleteDuty-->
+		UPDATE
+			DUTY_RECIPIENT
+		SET
+			PRGS_RATE='0'
+		WHERE
+			1=1
+		AND EMP_NO = #{empNo}
+		AND DUTY_NO = #{dutyNo}			
+	</update>
+	
+	
+	<!--   dutyRecipient update하기-->
+	<update id="updateDuty" parameterType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.updateDuty-->
+		UPDATE
+			DUTY
+		SET
+			 CLOS_DATE=TO_CHAR(TO_DATE(#{closDate}, 'YYYY-MM-DD'), 'YYYYMMDD')
+			,CLOS_TIME=#{closTime}
+			,DUTY_CN=#{dutyCn}
+		WHERE
+			1=1
+		AND	DUTY_NO=#{dutyNo}	
+	</update>
+	
+	<!--  관리자가 직원의 업무를 변경시 읽지않음으로 바꿔주기 -->
+	<update id="noRead" parameterType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.noRead-->
+		UPDATE 
+			DUTY_RECIPIENT
+		SET
+			CNFIRM_DATE =0
+		WHERE 
+			1=1
+		AND	EMP_NO=#{empNo}
+		AND DUTY_NO=#{dutyNo}	
+	</update>
+	
+	
+	<!--대쉬보드용 업무 리스트-->
+	<select id="getDashDuty" parameterType="dutyVO" resultType="dutyVO">
+		<!--com.team1.workforest.duty.mapper.DutyMapper.getDashDuty -->
+		WITH T AS (    
+		    SELECT ROW_NUMBER() OVER(ORDER BY F.CLOS_DATE ASC) RNUM
+		    	   , COUNT(1) OVER() AS TOTAL
+		    	   , F.* 
+		    FROM (
+		     SELECT 
+ 					  A.DUTY_NO
+ 					, A.EMP_NO
+ 					, A.PRGS_RATE
+ 					, A.CNFIRM_DATE
+ 					, B.DUTY_SJ
+ 					, B.DUTY_CN
+ 					, B.SEND_DATE
+ 					, B.CLOS_DATE
+ 					, B.CLOS_TIME
+ 					, C.EMP_NM AS EMP_NM
+ 					, D.DEPT_NM	AS SENDER
+ 					, E.CMMN_CD_NM AS POSITION
+			        , F.RSPNSBL_CTGRY_NM AS RSPNSBL
+				
+ 			FROM 
+ 					 DUTY_RECIPIENT A 
+ 					,     	  DUTY B 
+ 					,     EMPLOYEE C 
+ 					,   DEPARTMENT D
+ 					,  COMMON_CODE E
+ 					, RESPONSIBILITY_CATEGORY F 
+ 					
+ 					
+		   WHERE 	 1=1 
+		         AND A.DUTY_NO= B.DUTY_NO 
+		         AND A.EMP_NO=#{empNo}
+ 				 AND B.EMP_NO=C.EMP_NO 
+ 				 AND C.DEPT_NO=D.DEPT_NO
+ 				 AND C.POSITION_CD=E.CMMN_CD
+ 				 AND E.CMMN_CD_GROUP='EMP002'
+ 				 AND F.RSPNSBL_CD=C.RSPNSBL_CD						
+		     ) F
+		) 
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN  1 AND 3
+		
+	</select>
+		
+	
+	<!-- 대쉬보드용 진행중 업무 카운팅 -->
+	<select id="getDashTotal" parameterType="dutyVO" resultType="int">
+	   SELECT 
+		    COUNT(*) AS TOTAL
+		FROM 
+		    DUTY_RECIPIENT A
+		    INNER JOIN DUTY B ON A.DUTY_NO = B.DUTY_NO
+		    INNER JOIN EMPLOYEE C ON B.EMP_NO = C.EMP_NO
+		    INNER JOIN DEPARTMENT D ON C.DEPT_NO = D.DEPT_NO
+		WHERE 
+		    A.EMP_NO = #{empNo}
+		    AND A.PRGS_RATE BETWEEN 1 AND 9
+
+	</select>
+	
+	
+</mapper>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:tx="http://www.springframework.org/schema/tx" 
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+						https://www.springframework.org/schema/beans/spring-beans.xsd 
+						http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.2.xsd 
+						http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd">
+	
+	<bean id="dataSource" 
+		class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="jdbc:oracle:thin:@112.220.114.130:1521:xe" />
+		<property name="username" value="team1_202309F" />
+		<property name="password" value="java" />
+		<property name="initialSize" value="2"/>
+		<property name="maxTotal" value="3"/>
+		<property name="maxWaitMillis" value="2000"/>
+	</bean>
+
+	<bean id="sqlSessionFactory"
+	class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"></property>
+		<property name="mapperLocations" value="classpath:/sqlmap/**/*_SQL.xml" />
+		<property name="configLocation"	 value="/WEB-INF/mybatisAlias/mybatisAlias.xml" />
+	</bean>
+
+	<bean id="sqlSessionTemplate"
+	class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg index="0" ref="sqlSessionFactory" />
+	</bean>
+	
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- 파일업로드 용량 (10MB)-->
+		<property name="maxUploadSize" value="10485760"/>
+		<property name="defaultEncoding" value="UTF-8" />
+	</bean>
+	
+	<!--  매퍼인퍼테이스 설정-->
+	   <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.team1.workforest.**.mapper" />
+      </bean>
+	
+	<!-- 파일업로드 디렉토리 설정 -->
+	<bean id="uploadPath" class="java.lang.String">
+		<constructor-arg value="c:\\upload"/>
+	</bean>
+	
+	<!-- 트랜잭션 관리자 설정 -->
+	<bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	
+	<tx:annotation-driven/>
+	
+	<!-- 트랜잭션 Advice 설정 -->
+	<tx:advice id="txAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<tx:method name="*" rollback-for="Exception" />
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- 트랜잭션 pointcut 설정 -->
+	<bean id="loggingAdvice" class="com.team1.workforest.common.LoggingAdvice" />
+	
+	<aop:config>
+		<!-- impl로 끝나는 모든 클래스에 대해 포인트컷 설정 -->
+		<aop:pointcut id="allPointCut" expression="execution(* com.team1.workforest.**.service.impl.*.*(..))" />
+		
+		<aop:aspect ref="loggingAdvice">
+			<aop:before method="printLog" pointcut-ref="allPointCut" />
+			<aop:after method="printLogging" pointcut-ref="allPointCut" />
+		</aop:aspect>
+	</aop:config>
+	
+	<aop:config>
+		<aop:pointcut id="requiredTx"
+		expression="execution(* com.team1.workforest.**.service.impl.*.*(..))"/>
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="requiredTx" />
+	</aop:config>
+</beans>

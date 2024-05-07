@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.schedulerUtil.mapper.AlramMapper">
+	
+	<update id="updateAlramYN" parameterType="empVO">
+		UPDATE NOTIFICATION
+		SET
+		CNFIRM_YN_CD = 'Y'
+		WHERE EMP_NO = #{empNo}
+	</update>
+	
+	<update id="updateAlramSeeYN" parameterType="hashMap">
+		UPDATE NOTIFICATION
+		SET
+		SEE_YN = 'N'
+		WHERE NTCN_NO = #{ntcnNo}
+	</update>
+	
+	<insert id="addAlram" parameterType="hashMap">
+		INSERT INTO NOTIFICATION(NTCN_NO, EMP_NO, RCVE_DATE, NTCN_CN, CNFIRM_YN_CD,SEE_YN)
+		VALUES(NOTIFICATION_SEQ.NEXTVAL,#{empNo},SYSDATE,#{msg},'N','Y')
+	</insert>
+	
+	<select id="getAlramCount" parameterType="hashMap" resultType="String">
+		SELECT COUNT(EMP_NO)
+		FROM NOTIFICATION
+		WHERE EMP_NO = #{empNo}
+		AND SUBSTR(SYSDATE,1,10) = SUBSTR(RCVE_DATE,1,10)
+		AND CNFIRM_YN_CD = 'N'
+	</select>
+	
+	<select id="getAlramList" parameterType="empVO" resultType="notificationVO">
+		SELECT NTCN_NO, EMP_NO, RCVE_DATE, NTCN_CN, CNFIRM_YN_CD
+		FROM NOTIFICATION
+		WHERE EMP_NO = #{empNo}
+		AND SUBSTR(SYSDATE,1,10) = SUBSTR(RCVE_DATE,1,10)
+		AND SEE_YN = 'Y'
+		ORDER BY RCVE_DATE DESC
+	</select>
+	
+	<!-- 업무알림 Y인 사원들 -->
+	<select id="getEmpDutyYN" resultType="String" parameterType="empVO">
+		SELECT US.NTCN_YN_CD
+		FROM EMPLOYEE E, USER_SETUP_NTCN_MATTER US 
+		WHERE US.USER_SETUP_NO = E.EMP_NO
+		AND US.SETUP_NTCN_NO = '5'
+		AND E.EMP_NO = #{empNo}
+	</select>
+	
+	<!-- 업무알림 Y인 사원들 -->
+	<select id="getEmpApvYN" resultType="String" parameterType="empVO">
+		SELECT US.NTCN_YN_CD
+		FROM EMPLOYEE E, USER_SETUP_NTCN_MATTER US 
+		WHERE US.USER_SETUP_NO = E.EMP_NO
+		AND US.SETUP_NTCN_NO = '4'
+		AND E.EMP_NO = #{empNo}
+	</select>
+	
+	
+</mapper>

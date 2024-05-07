@@ -1,0 +1,52 @@
+@charset "UTF-8";
+
+
+.box3{
+	height:350px;
+	
+}
+
+.wf-content-box{
+	height:320px;
+	
+}
+
+#monthDay{
+	width:370px;
+		
+}
+
+
+#ui-id-1{  
+	z-index: 1000000; 
+} 
+#ui-id-2{  
+	z-index: 1000000; 
+} 
+#ui-id-3{  
+	z-index: 1000000; 
+} 
+#ui-id-4{  
+	z-index: 1000000; 
+} 
+#ui-id-5{  
+	z-index: 1000000; 
+} 
+
+.ui-autocomplete{   
+	z-index: 1000001; /* 모달창 안에서도 자동완성이 보이게 */
+}
+
+.swal2-container{	
+	z-index: 1000000;
+}
+
+.c2box{
+	overflow:auto;
+}
+
+
+.c1box{
+	overflow:auto;
+}
+

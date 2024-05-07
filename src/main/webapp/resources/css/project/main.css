@@ -1,0 +1,86 @@
+@charset "UTF-8";
+
+#ui-id-1{  
+	z-index: 100000; 
+}
+
+
+.ui-autocomplete{   
+	z-index: 100000; /* 모달창 안에서도 자동완성이 보이게 */
+}
+
+.swal2-container {
+	z-index: 100000; 
+}
+
+
+ .wf-flex-box{
+	height :350px;
+} 
+
+#calendarBox {
+    width: 560px;
+    height: 333px;
+    overflow: hidden;
+    }
+
+.center{
+	height :50px;
+}
+
+
+
+/* 간트용 css */
+/*        html,
+        body {
+            padding: 0px;
+            margin: 0px;
+            height: 100%;
+            
+        }
+
+        .gantt_grid_scale .gantt_grid_head_cell,
+        .gantt_task .gantt_task_scale .gantt_scale_cell {
+            font-weight: bold;
+            font-size: 14px;
+            color: rgba(0, 0, 0, 0.7);
+        }
+
+        .task-color-cell {
+            vertical-align: middle;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #cecece;
+            display: inline-block;
+            border-radius: 6px;
+        }
+      
+        .gantt_task_line{
+        	border: none;
+        	transition: width 0.3s ease;        	
+    		animation:  width 0.5s ease; 초기 상태에서도 애니메이션을 보이도록 설정
+       		width:0;
+        }
+        
+        .gantt_task_line.animated{
+			width: 100%;
+        }
+        
+        .gantt_scale_cell, .gantt_task_cell {
+        	border: none;
+        }
+        
+        .gantt_layout_x {
+         	height:700px;
+         	
+         }
+         
+         .gantt_layout_root{
+         	background-color:rgba(0, 0, 0, 0);
+         }
+        
+        .gantt_container_resize_watcher{
+        	height:100%;
+        	
+        } */
+/* 간트용 css 끝 */

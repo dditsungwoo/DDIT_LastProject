@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.schedulerUtil.mapper.SchedulerMapper">
+	
+	<!-- 모든 회의실 검색 -->
+	<select id="getMtr" resultType="String">
+		SELECT MTR_NO
+		FROM MEETINGROOM
+		ORDER BY MTR_NO ASC
+	</select>
+	
+	<!-- 현재 시간 30분 후에 예약이 있는 회의실 검색 -->
+	<select id="getMtrReservation" parameterType="String" resultType="mtrReservationVO">
+		SELECT MR.MTR_RESVE_NO, MR.MTR_NO, MR.EMP_NO, MR.RESVE_BEGIN_DATE, MR.RESVE_END_DATE, MR.RESVE_CN, M.MTR_NM, M.MTR_LOC
+		FROM MEETINGROOM_RESERVATION MR, MEETINGROOM M, USER_SETUP_NTCN_MATTER US
+		WHERE M.MTR_NO = #{mtrNo}
+		AND (RESVE_BEGIN_DATE - SYSDATE)*24*60 BETWEEN 25 AND 35
+		AND MR.MTR_NO = M.MTR_NO
+		AND US.USER_SETUP_NO = MR.EMP_NO
+		AND US.SETUP_NTCN_NO = '3'
+		AND US.NTCN_YN_CD = 'Y'
+	</select>
+	
+	<!-- 퇴근알림 Y인 사원, 남은 퇴근시간 -->
+	<select id="getAttendanceList" resultType="attendanceManageVO">
+		SELECT EMP_NO, ROUND((8 - ((SYSDATE - ATTEND_TIME) * 24) + 
+					(CASE 
+					WHEN 12 > TO_CHAR(ATTEND_TIME, 'HH24') THEN 1
+			        WHEN 12 = TO_CHAR(ATTEND_TIME, 'HH24') THEN TO_CHAR(ATTEND_TIME, 'MI')/60
+			        ELSE 0
+			    	END)
+				),1) AS LVFFC_LEFT
+		FROM ATTENDANCE_MANAGE, USER_SETUP_NTCN_MATTER
+		WHERE SUBSTR(SYSDATE,1,10) = SUBSTR(ATTEND_TIME,1,10)
+		AND USER_SETUP_NO = EMP_NO
+		AND SETUP_NTCN_NO = '2'
+		AND NTCN_YN_CD = 'Y'
+	</select>
+	
+	<!-- 출근알림 Y인 사원들 -->
+	<select id="getEmpList" resultType="String">
+		SELECT E.EMP_NO
+		FROM EMPLOYEE E, USER_SETUP_NTCN_MATTER US 
+		WHERE US.USER_SETUP_NO = E.EMP_NO
+		AND US.SETUP_NTCN_NO = '1'
+		AND US.NTCN_YN_CD = 'Y'
+	</select>
+	
+	
+</mapper>

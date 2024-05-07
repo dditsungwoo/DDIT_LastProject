@@ -1,0 +1,16 @@
+@charset "UTF-8";
+
+/* 차량 등록 버튼 버튼 */
+#createCarBtn {
+    display: none;
+}
+
+/* 회의실 수정 관련 버튼 */
+#updateMtrBtnGroup {
+    display: none;
+}
+
+/* 차량 수정 관련 버튼 */
+#updateCarBtnGroup {
+    display: none;
+}

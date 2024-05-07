@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.survey.mapper.SurveyMapper">
+	
+	<sql id="where">
+		<if test="surveyCompleteCd != null and surveyCompleteCd !=''">
+		AND SURVEY_COMPLETE_CD =#{surveyCompleteCd}
+		</if>
+	</sql>
+	
+	
+	
+	
+	
+	
+	<select id="getkeywordTotal" parameterType="HashMap" resultType="int">
+		SELECT  COUNT(*)
+		FROM SURVEY A , EMPLOYEE B
+		WHERE 
+		A.SURVEY_EMP_NO = B.EMP_NO
+		<include refid="where"></include>
+	</select>
+	
+	
+	
+	<select id="getSurveyList" parameterType="hashMap" resultType="surveyVO">
+	WITH T AS (
+    SELECT ROWNUM RNUM,
+           F.SURVEY_NO,
+           A.EMP_NM,
+           F.SURVEY_COMPLETE_CD,
+           F.SURVEY_EMP_NO,
+           F.SURVEY_OPEN_DATE,
+           F.SURVEY_TITLE,
+           F.SURVEY_END_DATE
+    FROM (
+        SELECT  
+                 SURVEY_NO
+                 , SURVEY_EMP_NO
+                 , SURVEY_COMPLETE_CD
+                 , SURVEY_OPEN_DATE
+                 , SURVEY_TITLE
+                 , SURVEY_END_DATE
+        FROM     SURVEY
+	        ORDER BY TO_NUMBER(SURVEY_NO) DESC
+	    ) F,
+	    EMPLOYEE A
+	    WHERE F.SURVEY_EMP_NO = A.EMP_NO
+	    <include refid="where"></include>
+			)
+		SELECT *
+		FROM T
+		 WHERE T.RNUM BETWEEN (#{currentPage}* 10) - (10 - 1) AND (#{currentPage}* 10)
+		ORDER BY RNUM
+	</select>
+	
+	
+	<!-- 이름 검색 -->	
+	<select id="empSearch" parameterType="surveyVO" resultType="empVO">
+		SELECT 
+			A.EMP_NM || '(' ||B.DEPT_NM ||')' AS EMP_NM
+           ,A.EMP_NO 
+    	FROM 
+    		EMPLOYEE A
+            ,DEPARTMENT B
+   		WHERE 
+   			1=1  
+        	AND A.EMP_NM LIKE '%'||#{empNm}||'%'
+        	AND A.DEPT_NO =B.DEPT_NO
+	</select>
+	
+	
+	<!-- 직원 정보 찾기 -->
+	<select id="empImpomation" parameterType="surveyVO" resultType="empVO">
+		SELECT 
+		    A.EMP_NM
+		    ,A.EMP_NO
+		    ,A.POSITION_CD
+		    ,A.RSPNSBL_CD
+		    ,A.DEPT_NO
+		    ,B.DEPT_NM
+		    ,C.CMMN_CD_NM RSPNSBL_CTGRY_NM
+		FROM
+		    EMPLOYEE A , DEPARTMENT B , COMMON_CODE C
+		WHERE A.EMP_NO=#{empNo}
+		AND A.DEPT_NO = B.DEPT_NO
+		AND A.POSITION_CD  = C.CMMN_CD
+		AND C.CMMN_CD_GROUP = 'EMP002'
+	
+	</select>
+	
+	<select id="deptSearch" parameterType="deptVO" resultType="deptVO">
+		SELECT 
+	         B.DEPT_NM  
+	         ,B.DEPT_NO
+		FROM 
+		    DEPARTMENT B
+		WHERE 
+		   			1=1  
+		AND DEPT_NM LIKE '%'||#{deptNm}||'%'
+	</select>
+	
+	
+	<select id="deptImpomation" parameterType="deptVO" resultType="deptVO">
+		SELECT * FROM 
+		DEPARTMENT
+		WHERE DEPT_NO = #{deptNo}
+	</select>
+	
+	
+	
+	<insert id="createSurvey" parameterType="surveyVO">
+		INSERT INTO SURVEY 
+		VALUES( 
+		    (SELECT NVL(MAX(TO_NUMBER(SURVEY_NO)), 0)+1 FROM SURVEY)
+		    ,#{surveyEmpNo}
+		    ,'1'
+		    ,SYSDATE
+		    ,#{surveyTitle}
+		    ,#{surveyEndDate}
+		    ,#{surveyAnonyCd}
+		 )
+	</insert>
+	
+	
+	<!-- surveyNo 최댓값 -->
+	<select id="maxsurveyNo" resultType="int">
+		SELECT NVL(MAX(TO_NUMBER(SURVEY_NO)), 0) FROM SURVEY
+	</select>
+	
+	<!-- 부서인원 모음 -->
+	<select id="collectDept" parameterType="String" resultType="surveyParticVO">
+		SELECT EMP_NO  AS SURVEY_PARTIC_NO,EMP_NM FROM EMPLOYEE 
+		WHERE DEPT_NO = #{part}
+	</select>
+	
+	
+	<!-- 부서인원 등록 -->
+	<insert id="insertSurveyPartic" parameterType="surveyParticVO">
+		INSERT INTO SURVEY_PARTIC
+		VALUES(
+			(SELECT NVL(MAX(TO_NUMBER(SURVEY_PARTIC_NO)), 0)+1 FROM SURVEY_PARTIC)
+			,#{surveyNo}
+			,#{surveyParticEmpNo}
+			,'N'
+		)
+	</insert>
+	
+	<!-- 질문 넣기 -->
+	<insert id="createQuestion" parameterType="surveyQuestionVO">
+	INSERT INTO SURVEY_QUESTION
+		VALUES(
+		 #{surveyNo}
+		 ,(SELECT NVL(MAX(TO_NUMBER(SURVEY_QUESTION_NO)), 0)+1 FROM SURVEY_QUESTION)
+		 ,#{surveyQuestionTypeCd}
+		 ,#{surveyQuestionSj}
+		 ,#{surveyQuestionId}
+		)
+	</insert>
+	
+	
+	<!--  선택지 넣기--> 
+	<insert id="createChoice" parameterType="surveyChoiceVO">
+		INSERT INTO SURVEY_CHOICE
+		VALUES(
+		 	#{surveyQuestionId}
+			,(SELECT NVL(MAX(TO_NUMBER(SURVEY_CHOICE_NO)), 0)+1 FROM SURVEY_CHOICE)
+		 	,#{surveySj}
+		 	,#{surveyNo}
+		)
+	</insert> 
+	
+	<select id="getParticList" parameterType="surveyParticVO" resultType="surveyVO">
+		SELECT 
+			A.SURVEY_NO
+			, A.SURVEY_EMP_NO
+			, C.SURVEY_PARTIC_NO
+			, B.EMP_NM
+			, D.CMMN_CD_NM
+			, A.SURVEY_COMPLETE_CD
+			, A.SURVEY_OPEN_DATE
+			,C.SURVEY_PARTIC_COM_CD
+			, A.SURVEY_TITLE
+			, A.SURVEY_END_DATE
+			, A.SURVEY_ANONY_CD
+		FROM SURVEY A , EMPLOYEE B ,SURVEY_PARTIC C, COMMON_CODE D
+		WHERE  A.SURVEY_EMP_NO = B.EMP_NO
+			AND A.SURVEY_NO = C.SURVEY_NO 
+			AND C.SURVEY_PARTIC_COM_CD = 'N'
+			AND B.POSITION_CD = D.CMMN_CD
+			AND D.CMMN_CD_GROUP = 'EMP002'
+			AND C.SURVEY_PARTIC_EMP_NO = #{surveyParticNo}
+	</select>
+	
+	<select id="surveyDetail" parameterType="String" resultType="surveyVO">
+		SELECT * FROM SURVEY
+		WHERE SURVEY_NO = #{surveyNo}
+	</select>
+	
+	<select id="surveyQuestion" parameterType="surveyVO" resultType="surveyQuestionVO">
+		SELECT * FROM SURVEY_QUESTION
+		WHERE SURVEY_NO =#{surveyNo}
+	</select>
+	
+	
+	<select id="surveyChoiceList" parameterType="surveyVO" resultType="surveyChoiceVO">
+		SELECT  
+		SURVEY_QUESTION_ID
+		, SURVEY_CHOICE_NO
+		, SURVEY_CHOICE_SJ SURVEY_SJ
+		, SURVEY_NO
+		FROM SURVEY_CHOICE
+		WHERE SURVEY_NO= #{surveyNo}
+        ORDER BY TO_NUMBER(SURVEY_CHOICE_NO)
+	</select>
+	
+	
+	
+	<!-- SurveyResponseVO(surveyResponseNo=null, surveyNo=26, surveyQuestionId=null,
+	 			surveyResponseResult=TEST, responseResult=null,
+	 			 checkBoxList=null, questionNum=4, surveyResponEmpNo=2019001) -->
+	<insert id="createResponse" parameterType="surveyResponseVO">
+		INSERT INTO SURVEY_RESPONSE(
+		    SURVEY_RESPONSE_NO
+		    , SURVEY_NO
+		    , SURVEY_QUESTION_ID
+		    , SURVEY_RESPONSE_RESULT
+		    , SURVEY_RESPON_EMP_NO
+		    , SURVEY_CHOICE_NO
+		)
+		VALUES(
+		    (SELECT NVL(MAX(TO_NUMBER(SURVEY_RESPONSE_NO)), 0)+1 FROM SURVEY_RESPONSE)
+		    ,#{surveyNo}
+		    ,#{questionId}
+		    ,#{surveyResponseResult}
+		    ,#{surveyResponEmpNo}
+		    ,#{surveyChoiceNo}
+		 )
+	</insert>
+	
+	
+	<update id="updatePartic" parameterType="surveyResponseVO">
+		UPDATE SURVEY_PARTIC
+		SET SURVEY_PARTIC_COM_CD = 'Y'
+		WHERE
+		SURVEY_NO = #{surveyNo}
+		AND SURVEY_PARTIC_EMP_NO =#{surveyResponEmpNo}
+	</update>
+	
+	
+	<select id="getSurveyVO" parameterType="String" resultType="surveyVO">
+		SELECT 
+			SURVEY_NO
+			, SURVEY_EMP_NO
+			, SURVEY_COMPLETE_CD
+			, SURVEY_OPEN_DATE
+			, SURVEY_TITLE
+			, SURVEY_END_DATE
+			, SURVEY_ANONY_CD
+			FROM SURVEY
+			WHERE SURVEY_NO=#{surveyNo}
+	</select>
+	
+	<select id="getSurveyParticVOList" parameterType="String" resultType="surveyParticVO">
+		SELECT 
+			A.SURVEY_PARTIC_NO
+            ,B.EMP_NM
+            ,C.CMMN_CD_NM
+            ,D.RSPNSBL_CTGRY_NM
+			, A.SURVEY_NO
+			,A.SURVEY_PARTIC_EMP_NO
+			, A.SURVEY_PARTIC_COM_CD
+		FROM SURVEY_PARTIC A , EMPLOYEE B ,COMMON_CODE C ,RESPONSIBILITY_CATEGORY D
+		WHERE SURVEY_NO=#{surveyNo}
+        AND A.SURVEY_PARTIC_EMP_NO = B.EMP_NO
+        AND B.POSITION_CD = C.CMMN_CD
+        AND C.CMMN_CD_GROUP = 'EMP002'
+        AND D.RSPNSBL_CD = B.RSPNSBL_CD
+	</select>
+	
+	
+	<select id="getSurveyQuestionVOList" parameterType="String" resultType="surveyQuestionVO">
+		SELECT 
+			SURVEY_NO
+			, SURVEY_QUESTION_NO
+			, SURVEY_QUESTION_TYPE_CD
+			, SURVEY_QUESTION_SJ
+			, SURVEY_QUESTION_ID
+		FROM SURVEY_QUESTION 
+			WHERE SURVEY_NO=#{surveyNo}
+	</select>
+	
+	<select id="getSurveyResponseVOList" parameterType="String" resultType="surveyResponseVO">
+	SELECT 
+		SURVEY_RESPONSE_NO
+		, SURVEY_NO
+		, SURVEY_QUESTION_ID
+		, SURVEY_RESPONSE_RESULT
+		, SURVEY_RESPON_EMP_NO
+	FROM SURVEY_RESPONSE
+	WHERE SURVEY_NO= #{surveyNo}
+	</select>
+	
+	<select id="getSurveyChoiceVOList" parameterType="String" resultType="surveyChoiceVO">
+		SELECT 
+			SURVEY_QUESTION_ID
+			, SURVEY_CHOICE_NO
+			, SURVEY_CHOICE_SJ
+			, SURVEY_NO
+		FROM SURVEY_CHOICE
+		WHERE SURVEY_NO = #{surveyNo}
+	</select>
+	
+	
+	<select id="getQuestionSum" parameterType="String" resultType="int">
+		SELECT COUNT(*) FROM SURVEY_QUESTION
+		WHERE SURVEY_NO=#{surveyNo}
+	</select>
+	
+	
+	
+	
+	
+	<select id="statisSurvey" parameterType="surveyResponseVO" resultType="surveyVO">
+		WITH T AS(
+		    SELECT A.SURVEY_NO
+		               , (SELECT E.SURVEY_TITLE FROM SURVEY E WHERE E.SURVEY_NO = A.SURVEY_NO) SURVEY_TITLE
+		               , B.SURVEY_QUESTION_SJ
+		               , C.SURVEY_CHOICE_SJ
+		               , C.SURVEY_CHOICE_NO
+		               , B.SURVEY_QUESTION_ID
+		               , B.SURVEY_QUESTION_TYPE_CD
+		    FROM    SURVEY A, SURVEY_QUESTION B, SURVEY_CHOICE C, SURVEY_RESPONSE D
+		    WHERE A.SURVEY_NO = B.SURVEY_NO 
+		        AND      B.SURVEY_NO = C.SURVEY_NO(+)
+		        AND      B.SURVEY_QUESTION_ID = C.SURVEY_QUESTION_ID(+)
+		        AND      C.SURVEY_CHOICE_NO = D.SURVEY_CHOICE_NO
+		        AND      A.SURVEY_NO = #{surveyNo}
+		        AND      B.SURVEY_QUESTION_TYPE_CD != 3
+		        AND     B.SURVEY_QUESTION_ID =  #{questionId}
+		)
+		SELECT T.SURVEY_NO,T.SURVEY_TITLE, T.SURVEY_QUESTION_SJ
+		            , T.SURVEY_QUESTION_ID, T.SURVEY_CHOICE_SJ,T.SURVEY_QUESTION_TYPE_CD,T.SURVEY_CHOICE_NO
+		            , COUNT(*) CNT
+		FROM T
+		GROUP BY T.SURVEY_NO,T.SURVEY_TITLE, T.SURVEY_QUESTION_ID, T.SURVEY_QUESTION_SJ, T.SURVEY_CHOICE_SJ,
+        T.SURVEY_QUESTION_TYPE_CD
+        ,T.SURVEY_CHOICE_NO
+        ORDER BY TO_NUMBER(T.SURVEY_CHOICE_NO)
+	</select>
+	
+	<select id="getTypeCd" resultType="surveyQuestionVO" parameterType="String">
+		SELECT 
+		    SURVEY_QUESTION_TYPE_CD 
+		FROM 
+		    SURVEY_QUESTION 
+		WHERE 
+		    SURVEY_NO = #{surveyNo}
+		ORDER BY  TO_NUMBER(SURVEY_QUESTION_NO)
+	</select>
+	
+	<select id="getQuestionSj" resultType="surveyQuestionVO" parameterType="String">
+		SELECT 
+		    SURVEY_QUESTION_SJ
+		FROM 
+		    SURVEY_QUESTION 
+		WHERE 
+		    SURVEY_NO = #{surveyNo}
+		ORDER BY  TO_NUMBER(SURVEY_QUESTION_NO)
+	</select>
+	
+	<select id="getType3Response" parameterType="surveyResponseVO" resultType="surveyResponseVO">
+		SELECT SURVEY_RESPONSE_RESULT FROM SURVEY_RESPONSE
+		WHERE SURVEY_NO=#{surveyNo}
+		AND SURVEY_QUESTION_ID = #{questionId}
+	</select>
+	
+	
+	<select id="getAllTotal" parameterType="surveyVO" resultType="int">
+		SELECT COUNT(*) FROM SURVEY_PARTIC
+		WHERE SURVEY_NO = #{surveyNo}
+	</select>
+	
+	<select id="getCpCount" parameterType="surveyVO" resultType="int">
+	SELECT COUNT(*) FROM SURVEY_PARTIC
+	WHERE SURVEY_NO = #{surveyNo}
+	AND SURVEY_PARTIC_COM_CD = 'Y'
+	</select>
+	
+	<select id="getNoCount" parameterType="surveyVO" resultType="int">
+	SELECT COUNT(*) FROM SURVEY_PARTIC
+	WHERE SURVEY_NO = #{surveyNo}
+	AND SURVEY_PARTIC_COM_CD = 'N'
+	</select>
+	
+	
+	<insert id="createSurveyDes" parameterType="surveyResponseVO" >
+		INSERT INTO SURVEY_RESPONSE(
+			    SURVEY_RESPONSE_NO
+			    , SURVEY_NO
+			    , SURVEY_QUESTION_ID
+			    , SURVEY_RESPONSE_RESULT
+			    , SURVEY_RESPON_EMP_NO
+			    , SURVEY_CHOICE_NO
+			)
+			VALUES(
+			    (SELECT NVL(MAX(TO_NUMBER(SURVEY_RESPONSE_NO)), 0)+1 FROM SURVEY_RESPONSE)
+			    ,#{surveyNo}
+			    ,#{questionId}
+			    ,#{surveyResponseResult}
+			    ,#{surveyResponEmpNo}
+			    ,''
+			 )
+	</insert>
+	
+	<update id="completeSurvey" parameterType="surveyVO">
+		UPDATE SURVEY
+		SET SURVEY_COMPLETE_CD = '2'
+		WHERE
+		SURVEY_NO=#{surveyNo}
+	</update>
+	
+	<delete id="deleteSurvey" parameterType="surveyVO">
+		DELETE FROM SURVEY
+		WHERE SURVEY_NO=#{surveyNo}
+	</delete>
+	
+	<select id="getEmp" parameterType="surveyVO" resultType="surveyVO">
+		SELECT 
+		A.EMP_NM
+		,A.EMP_NO
+		,B.CMMN_CD_NM
+		,C.DEPT_NM
+		FROM EMPLOYEE A,COMMON_CODE B , DEPARTMENT C
+		WHERE 
+		A.POSITION_CD = B.CMMN_CD
+		AND A.DEPT_NO = C.DEPT_NO
+		AND B.CMMN_CD_GROUP = 'EMP002'
+		AND EMP_NO=#{empNo}
+	</select>
+	
+	
+	<select id="getSurveyNum" resultType="int" parameterType="surveyVO">
+	SELECT COUNT(*) FROM SURVEY_PARTIC
+	WHERE SURVEY_PARTIC_EMP_NO=#{surveyParticNo}
+	AND SURVEY_PARTIC_COM_CD = 'N'
+	</select>
+	
+	
+	
+</mapper>

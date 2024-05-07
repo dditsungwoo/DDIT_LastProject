@@ -1,0 +1,109 @@
+@charset "UTF-8";
+#chart_div {
+	width: 300px;
+	height: 250px;
+}
+
+.align-center {
+	text-align: center;
+}
+
+.wf-content-wrap {
+	display: flex;
+	flex-direction: column;
+}
+
+.attendance-box1 {
+	width: 20%;
+}
+
+.attendance-box2 {
+	width: 80%;
+}
+
+.attendance-box3 {
+	margin-top: 30px;
+	flex-direction: column;
+}
+
+header {
+	flex-direction: row;
+}
+
+.attendanceBtn-container {
+	text-align: center;
+}
+
+.attendanceBtn-container button {
+	margin: 0px 10px;
+}
+
+.avgDiv {
+	width: 180px;
+	margin-left: 3%;
+}
+
+.avgBadgeDiv {
+	margin-left: 10px;
+}
+.avgBadgeDiv p{
+	height: 20px;
+}
+.weekDayDiv {
+	margin-left: 4%;
+	width: 50px;
+	height: 200px;
+	text-align: center;
+}
+
+.weekDayGraph {
+	height: 150px;
+	margin-top: 20px;
+	width: 20px;
+	margin-left: 15px;
+	border-radius: 4px;
+}
+.weekDay2Span{
+	width: 250px;
+}
+
+.monthDayDiv {
+	margin-left: 2.7px;
+	width: 30px;
+	height: 200px;
+	text-align: center;
+}
+
+.monthDayGraph {
+	height: 150px;
+	margin: 20px auto 0px;
+	width: 20px;
+	border-radius: 4px;
+}
+.monthSpanTime{
+/* 	display: block; */
+/* 	width: 50px; */
+/* 	font-size: 0.8rem; */
+/* 	text-align: center; */
+/* 	position: relative; */
+/* 	right: 9px; */
+}
+
+.btn1 {
+    position: relative; /* 부모 요소인 버튼을 상대적으로 위치 설정 */
+    height: 25px;
+    width: 25px;
+}
+
+.btn1 i {
+    position: absolute; /* 아이콘을 절대 위치로 설정 */
+	top: 50%; /* 위쪽 여백을 버튼 높이의 절반으로 설정 */
+	left: 50%; /* 왼쪽 여백을 버튼 너비의 절반으로 설정 */
+	transform: translate(-50%, -50%); /* 아이콘을 가운데로 정렬 */
+	animation: none !important;
+    transition: none !important;
+}
+.btn1,.weekDay2Span {
+    display: inline-block; /* 인라인 블록 요소로 설정하여 수평으로 나열 */
+   	vertical-align: middle; /* 수직 가운데 정렬 */
+}

@@ -1,0 +1,126 @@
+@charset "UTF-8";
+
+      html,
+      body {
+          padding: 0px;
+          margin: 0px;
+          height: 100%;
+          
+      }
+
+      .gantt_grid_scale .gantt_grid_head_cell,
+      .gantt_task .gantt_task_scale .gantt_scale_cell {
+          font-weight: bold;
+          font-size: 14px;
+          color: rgba(0, 0, 0, 0.7);
+      }
+
+      .task-color-cell {
+          vertical-align: middle;
+          width: 12px;
+          height: 12px;
+          border: 1px solid #cecece;
+          display: inline-block;
+          border-radius: 6px;
+      }
+    .gantt_layout_cell_border_transparent{ /*밑에 차트 가리기*/
+      	display:none;
+      	color:rgba(0, 0, 0, 0);
+      	z-index:0;
+      	
+      }   
+     
+      .gantt_task_line{
+      	border: none;
+      	transition: width 0.3s ease;        	
+  		animation:  width 0.5s ease; /* 초기 상태에서도 애니메이션을 보이도록 설정 */
+     		width:0;
+      }
+      
+      .gantt_task_line.animated{
+	width: 100%;
+      }
+      
+      .gantt_scale_cell, .gantt_task_cell {
+      	border: none;
+      }
+      
+      .gantt_layout_x {
+       	height:800px;
+       	overflow: hidden;
+       	
+       }
+       
+       .gantt_layout_root{
+       	background-color:rgba(0, 0, 0, 0);
+       }
+      
+      .gantt_container_resize_watcher{
+      	height:100%;
+      	
+      }
+      
+      
+
+     .gantt_hor_scroll{
+     
+     }
+     
+     
+     /* 여기서부터 height 조정*/
+     
+     .gantt_grid_data{
+      	height:500px;
+     }
+     .gantt_row{
+     	height:50px;
+     }
+     
+     .gantt_layout_cell {
+    	height:500px;
+     } 
+     
+     .gantt_bar_task {
+     	height:50px;
+     }
+     
+     .downBox{
+     	position:absolute; 
+      	height:300px;
+       	width:1530px;
+       	top:570px;
+       	left:50px;
+       	padding-left:3px;
+     
+     }
+
+     .process {
+        position: relative;
+    }
+    
+    
+    .progress-dot {
+	   	width: 50px;
+	    height: 18px;
+	    border-radius: 10%;
+	    display: inline-block;
+	    position: absolute;
+	    padding: 2px;
+	    margin: 3px;
+	    top: 0px;
+	    margin-left: 10px;
+    }
+    .started { background-color:rgb(81, 193, 133); }
+    .in-progress { background-color: rgb(23, 198, 83);  }
+    .completed { background-color: #448aff; }
+
+
+.box2 .grappBox {
+    flex: 0 1 25%; /* 첫 번째 요소가 두 번째 요소보다 크기가 2배입니다. */
+}
+
+.box2 .contsBox {
+    flex: 0 1 73%; /* 첫 번째 요소가 두 번째 요소보다 크기가 2배입니다. */
+}
+
+     

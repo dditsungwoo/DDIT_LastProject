@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.team1.workforest.employee.mapper.DepartmentMapper">
+	
+	<!-- 부서 목록 -->
+	<select id="deptList" resultType="deptVO">
+		SELECT DEPT_NO, DEPT_NM, UPPER_DEPT FROM DEPARTMENT ORDER BY DEPT_NO ASC
+	</select>	
+	
+	
+	<!-- 부서번호 부여 -->
+	<select id="findMyDeptNo" parameterType="deptVO"
+		resultType="String">
+		SELECT SUBSTR(DEPT_NO, 1, LENGTH(DEPT_NO) - 1) ||
+		TO_CHAR(MAX(TO_NUMBER(SUBSTR(DEPT_NO, -1))) + 1)
+		FROM DEPARTMENT
+		WHERE
+		UPPER_DEPT = #{upperDept}
+		GROUP BY SUBSTR(DEPT_NO, 1, LENGTH(DEPT_NO) - 1)
+	</select>
+	
+	<!-- 부서 등록 -->
+	<insert id="addDept" parameterType="deptVO">
+		INSERT INTO DEPARTMENT (DEPT_NO, DEPT_NM, UPPER_DEPT)
+		VALUES (#{deptNo}, #{deptNm}, #{upperDept})
+	</insert>
+	
+	<!-- 부서명 자동완성 -->
+	<select id="findEmpByName">
+		SELECT DEPT_NM || '('  || DEPT_NO ||')' AS DEPT_NM, DEPT_NO FROM DEPARTMENT WHERE DEPT_NM LIKE '%'|| #{deptNm}||'%'
+	</select>
+	
+	<!-- 부서 수정 -->
+	<update id="modDept" parameterType="deptVO">
+		UPDATE DEPARTMENT SET DEPT_NM=#{deptNm} WHERE DEPT_NO=#{deptNo}
+	</update>
+	
+	<!-- 부서 삭제 -->
+	<delete id="delDept" parameterType="deptVO">
+		DELETE FROM DEPARTMENT WHERE DEPT_NO=#{deptNo}
+	</delete>
+	
+	
+	
+
+</mapper>

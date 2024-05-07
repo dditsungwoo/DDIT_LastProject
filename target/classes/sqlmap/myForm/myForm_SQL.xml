@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.team1.workforest.myForm.mapper.MyFormMapper">
+
+	<!-- 사원별 문서 신청 목록 -->
+	<select id="getMyDocList" parameterType="mFormVO"
+		resultType="mFormVO">
+		SELECT
+		DOC_NO,
+		CASE
+		WHEN DOC_STATUS = '1' THEN '신청가능'
+		WHEN DOC_STATUS = '2' THEN '신청중'
+		WHEN DOC_STATUS = '3' THEN '발급가능'
+		WHEN DOC_STATUS = '4' THEN '발급거절'
+		ELSE '상태 미정'
+		END AS DOC_STATUS,
+		CASE
+		WHEN DOC_NM = '1' THEN '재직증명서'
+		WHEN DOC_NM = '2' THEN '급여명세서'
+		WHEN DOC_NM = '3' THEN '연봉계약서'
+		ELSE '문서명 미정'
+		END AS DOC_NM,
+		DOC_REASON,
+		ISSUE_BEGIN_DATE, EMP_NO, ISSUE_ACCEPT_DATE
+
+		FROM
+		MYFORM
+		WHERE DOC_STATUS=#{docStatus} AND EMP_NO=#{empNo}
+		ORDER BY DOC_NO DESC
+	</select>
+
+
+	<!--관리자용- 문서 신청 목록 -->
+	<select id="docList" parameterType="mFormVO"
+		resultType="mFormVO">
+		SELECT
+		DOC_NO,
+		CASE
+		WHEN DOC_STATUS = '1' THEN '신청가능'
+		WHEN DOC_STATUS = '2' THEN '신청중'
+		WHEN DOC_STATUS = '3' THEN '발급가능'
+		WHEN DOC_STATUS = '4' THEN '발급거절'
+		ELSE '상태 미정'
+		END AS DOC_STATUS,
+		CASE
+		WHEN DOC_NM = '1' THEN '재직증명서'
+		WHEN DOC_NM = '2' THEN '급여명세서'
+		WHEN DOC_NM = '3' THEN '연봉계약서'
+		ELSE '문서명 미정'
+		END AS DOC_NM,
+		DOC_REASON,
+		ISSUE_BEGIN_DATE,
+		EMP_NO,
+		ISSUE_ACCEPT_DATE
+		FROM
+		MYFORM
+		WHERE
+		DOC_STATUS=#{docStatus}
+		ORDER BY
+		DOC_NO DESC
+	</select>
+
+	<!-- 발급 상태 변경 -->
+	<update id="updateDocStatus" parameterType="mFormVO">
+		UPDATE MYFORM
+		SET DOC_STATUS=#{docStatus}, ISSUE_ACCEPT_DATE=TO_CHAR(SYSDATE,
+		'YYYY-MM-DD')
+		WHERE DOC_NO=#{docNo}
+	</update>
+
+	<!-- 발급 신청 -->
+	<insert id="addDoc" parameterType="mFormVO">
+		INSERT INTO MYFORM (DOC_NO,
+		DOC_STATUS, DOC_NM, DOC_REASON, ISSUE_BEGIN_DATE, EMP_NO)
+		VALUES
+		(#{docNo}, '2', #{docNm}, #{docReason}, TO_CHAR(SYSDATE,
+		'YYYY-MM-DD'), #{empNo})
+	</insert>
+
+	<!-- 문서발급 신청 번호 자동부여 -->
+	<select id="findDocNo" resultType="String">
+		SELECT
+		'D' || LPAD(COALESCE(SUBSTR(MAX(DOC_NO), 2) + 1, 1), 3, '0') AS
+		NEXT_DOC_NO
+		FROM MYFORM
+	</select>
+
+
+
+
+
+
+</mapper>

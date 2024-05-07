@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.admin.chart.mapper.AdminEmpMapper">
+	
+	<!-- 나이분포 -->
+	<select id="getAgeGraph" parameterType="hashMap" resultType="int">
+		SELECT COUNT(EMP_NO)
+		FROM EMPLOYEE
+		WHERE #{year} >= SUBSTR(ECNY_DATE,1,4)
+		AND WORK_SE_CD != 3 AND WORK_SE_CD != 4
+		AND (SYSDATE - TO_DATE(BDATE,'YYYYMMDD'))/365 > #{start}
+		AND #{end} >= (SYSDATE - TO_DATE(BDATE,'YYYYMMDD'))/365
+	</select>
+	
+	<!-- 평균 나이 -->
+	<select id="getAvgAge" parameterType="hashMap" resultType="int">
+		SELECT ROUND(AVG((SYSDATE - TO_DATE(BDATE,'yyyymmdd'))/365),0)
+		FROM EMPLOYEE
+		WHERE #{year} >= SUBSTR(ECNY_DATE,1,4)
+		AND WORK_SE_CD != 3 AND WORK_SE_CD != 4
+	</select>
+	
+	<!-- 재직자 총 사원수 -->
+	<select id="getEmpCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(EMP_NO)
+		FROM EMPLOYEE
+		WHERE WORK_SE_CD != 3 AND WORK_SE_CD != 4
+		AND #{year} >= SUBSTR(ECNY_DATE,1,4)
+	</select>
+	
+	<!-- 사원 성비 -->
+	<select id="getGenderRate" parameterType="hashMap" resultType="int">
+		SELECT COUNT(EMP_NO)
+		FROM EMPLOYEE
+		WHERE WORK_SE_CD != 3 AND WORK_SE_CD != 4
+		AND GENDER = #{gender}
+		AND #{year} >= SUBSTR(ECNY_DATE,1,4)
+		AND WORK_SE_CD != 3 AND WORK_SE_CD != 4
+	</select>
+	
+	<!-- 퇴직자 수 -->
+	<select id="getRetireCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(EMP_NO)
+		FROM EMPLOYEE
+		WHERE WORK_SE_CD = #{retire}
+		AND #{year} >= SUBSTR(ECNY_DATE,1,4)
+		AND WORK_SE_CD != 3 AND WORK_SE_CD != 4
+	</select>
+	
+	<!-- 입사자 수 -->
+	<select id="getHireCount" parameterType="hashMap" resultType="int">
+		SELECT COUNT(EMP_NO)
+		FROM EMPLOYEE
+		WHERE #{year} = SUBSTR(ECNY_DATE,1,4)
+		AND WORK_SE_CD != 3 AND WORK_SE_CD != 4
+	</select>
+
+	<!-- 부서 목록 -->
+	<select id="getDeptNo" parameterType="hashMap" resultType="String">
+		SELECT DEPT_NO
+		FROM DEPARTMENT
+		WHERE DEPT_NO != 'DEPT00'
+		ORDER BY DEPT_NO ASC
+	</select>
+	
+	<!-- 부서별 사원 수 -->
+	<select id="getDeptCount" parameterType="hashMap" resultType="String">
+		SELECT COUNT(EMP_NO)
+		FROM EMPLOYEE
+		WHERE DEPT_NO = #{deptNo}
+		AND #{year} >= SUBSTR(ECNY_DATE,1,4)
+		AND WORK_SE_CD != 3 AND WORK_SE_CD != 4
+	</select>
+	
+	<!-- 부서이름 조회 -->
+	<select id="getDeptName" parameterType="hashMap" resultType="deptVO">
+		SELECT DEPT_NM, DEPT_NO
+		FROM DEPARTMENT
+		WHERE DEPT_NO != 'DEPT00'
+		ORDER BY DEPT_NO ASC
+	</select>
+	
+	<!-- 월별 퇴사율 -->
+	<select id="getRetireRate" parameterType="hashMap" resultType="String">
+		SELECT (
+				SELECT COUNT(EMP_NO)
+				FROM EMPLOYEE
+				WHERE SUBSTR(RETIRE_DATE,1,6) = #{month}
+				AND WORK_SE_CD ='4'
+				)
+				/
+				(
+				SELECT COUNT(EMP_NO)
+				FROM EMPLOYEE
+				WHERE #{month}||'01' > ECNY_DATE
+				AND WORK_SE_CD != '3' AND WORK_SE_CD != '4'
+				)
+		FROM DUAL
+	</select>
+	
+	<!-- 1년간 총 퇴사자 수 -->
+	<select id="getYearRetireRate1" parameterType="hashMap" resultType="int">
+		SELECT COUNT(EMP_NO)
+		FROM EMPLOYEE
+		WHERE SUBSTR(RETIRE_DATE,1,4) = #{year}
+		AND WORK_SE_CD = '4'
+	</select>
+	
+	<!-- 매월 재직인원 -->
+	<select id="getYearRetireRate2" parameterType="hashMap" resultType="int">
+		SELECT COUNT(EMP_NO)
+		FROM EMPLOYEE
+		WHERE #{month} || '01' > ECNY_DATE
+		AND RETIRE_DATE IS NULL
+	</select>
+	
+	<!-- 직급 분포 -->
+	<select id="getPositionGraph" parameterType="hashMap" resultType="adminEmpVO1">
+		SELECT 
+		    COMMON_CODE.CMMN_CD_NM AS POSITION,
+		    NVL(COUNT(EMPLOYEE.POSITION_CD), 0) AS COUNT
+		FROM 
+		    COMMON_CODE
+		LEFT JOIN 
+		    EMPLOYEE ON COMMON_CODE.CMMN_CD = EMPLOYEE.POSITION_CD
+		        AND #{year} >= SUBSTR(ECNY_DATE,1,4)
+		        AND WORK_SE_CD != '3' AND WORK_SE_CD != '4'
+		WHERE 
+		    COMMON_CODE.CMMN_CD_GROUP = 'EMP002'
+		GROUP BY 
+		    COMMON_CODE.CMMN_CD_NM, COMMON_CODE.CMMN_CD 
+		ORDER BY 
+		    COMMON_CODE.CMMN_CD
+	</select>
+	
+	<!-- 지역 분포 -->
+	<select id="getLocalCount" parameterType="hashMap" resultType="adminEmpVO1">
+		SELECT 
+		    COMMON_CODE.CMMN_CD_NM AS WORKLOCATION,
+		    NVL(COUNT(EMPLOYEE.WORK_LOC_CD), 0) AS COUNT
+		FROM 
+		    COMMON_CODE
+		LEFT JOIN 
+		    EMPLOYEE ON COMMON_CODE.CMMN_CD = EMPLOYEE.WORK_LOC_CD
+		        AND #{year} >= SUBSTR(ECNY_DATE,1,4)
+		        AND WORK_SE_CD != '3' AND WORK_SE_CD != '4'
+		WHERE 
+		    COMMON_CODE.CMMN_CD_GROUP = 'EMP005'
+		GROUP BY 
+		    COMMON_CODE.CMMN_CD_NM, COMMON_CODE.CMMN_CD 
+		ORDER BY 
+		    COMMON_CODE.CMMN_CD
+	</select>
+	
+	<!-- 재직상태 분포 -->
+	<select id="getWorkerCount" parameterType="hashMap" resultType="adminEmpVO1">
+		SELECT 
+		    COMMON_CODE.CMMN_CD_NM AS WORKSTATE,
+		    NVL(COUNT(EMPLOYEE.WORK_LOC_CD), 0) AS COUNT
+		FROM 
+		    COMMON_CODE
+		LEFT JOIN 
+		    EMPLOYEE ON COMMON_CODE.CMMN_CD = EMPLOYEE.WORK_SE_CD
+		    AND #{year} >= SUBSTR(ECNY_DATE,1,4)
+		WHERE 
+		    COMMON_CODE.CMMN_CD_GROUP = 'EMP004'
+		AND  COMMON_CODE.CMMN_CD != '3' AND  COMMON_CODE.CMMN_CD != '4'
+		GROUP BY 
+		    COMMON_CODE.CMMN_CD_NM, COMMON_CODE.CMMN_CD 
+		ORDER BY 
+		    COMMON_CODE.CMMN_CD
+	</select>
+	
+</mapper>

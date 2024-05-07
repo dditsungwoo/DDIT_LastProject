@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.admin.chart.mapper.AdminAttendanceMapper">
+	
+	<select id="getEmp" parameterType="hashMap" resultType="empVO">
+		SELECT E.EMP_NO, E.DEPT_NO, E.EMP_NM, E.POSITION_CD, E.ECNY_DATE, D.DEPT_NM,C.CMMN_CD_NM AS POSITION
+		FROM EMPLOYEE E,COMMON_CODE C, DEPARTMENT D
+		WHERE (E.EMP_NO LIKE '%' || #{param} || '%' OR E.EMP_NM LIKE '%' || #{param} || '%')
+		AND E.DEPT_NO = D.DEPT_NO
+		AND E.POSITION_CD = C.CMMN_CD
+		AND C.CMMN_CD_GROUP = 'EMP002'
+	</select>
+	
+	<select id="getEmpNo" parameterType="hashMap" resultType="empVO">
+		SELECT EMP_NO, ECNY_DATE
+		FROM EMPLOYEE
+		WHERE DEPT_NO = #{deptNo}
+		AND EMP_NM = #{empNm}
+	</select>
+	
+	
+</mapper>

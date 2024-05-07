@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team1.workforest.admin.reservation.mapper.AdminResourcesMapper">
+	
+	<!-- 회의실 정보 resultMap -->
+	<resultMap type="mtrVO" id="mtrMap">
+		<result property="mtrNo" column="MTR_NO"/>
+		<result property="mtrLoc" column="MTR_LOC"/>
+		<result property="mtrNm" column="MTR_NM"/>
+		<result property="aceptblNmpr" column="ACEPTBL_NMPR"/>
+		<result property="photoUrl" column="PHOTO_URL"/>
+		<result property="usePosblYnCd" column="USE_POSBL_YN_CD"/>
+		<collection property="mtrEquipedList" resultMap="mtrEquipedMap"></collection>
+	</resultMap>
+	<resultMap type="mtrEquipmentVO" id="mtrEquipedMap">
+		<result property="eqpmnNo" column="EQPMN_NO"/>
+		<result property="mtrNo" column="MTR_NO"/>
+		<result property="equipYnCd" column="EQUIP_YN_CD"/>
+	</resultMap>
+	
+	<!-- 회의실 목록 불러오기 -->
+	<select id="getMtrList" resultMap="mtrMap">
+		SELECT 
+	                  M.MTR_NO				<!-- 회의실 번호 -->				
+	    			, M.MTR_LOC				<!-- 회의실 위치 -->	
+	   				, M.MTR_NM				<!-- 회의실 이름 -->	
+	                , M.ACEPTBL_NMPR    	<!-- 수용 가능 인원 -->
+	    			, M.PHOTO_URL			<!-- 사진 URL -->		
+	    			, M.USE_POSBL_YN_CD		<!-- 사용 가능 여부 코드 -->
+	    			, E.EQPMN_NO			<!-- 장비 번호 -->
+	    			, E.EQUIP_YN_CD			<!-- 장비 보유 여부 코드 -->
+		FROM 
+    				MEETINGROOM M 
+    	INNER JOIN 
+    				MEETINGROOM_EQUIPMENT E ON M.MTR_NO = E.MTR_NO
+	</select>
+	
+	<!-- 회의실 추가 -->
+	<insert id="createMtr" parameterType="mtrVO">
+		INSERT INTO MEETINGROOM
+					(
+					  MTR_NO			<!-- 회의실 번호 -->		
+					, MTR_LOC			<!-- 회의실 위치 -->	
+					, MTR_NM			<!-- 회의실 이름 -->
+					, ACEPTBL_NMPR		<!-- 수용 가능 인원 -->
+					, PHOTO_URL			<!-- 사진 URL -->	
+					, USE_POSBL_YN_CD	<!-- 사용 가능 여부 코드 -->
+					)
+		VALUES
+					(
+					  #{mtrNo}
+					, #{mtrLoc}
+					, #{mtrNm}
+					, #{aceptblNmpr}
+					, #{photoUrl}
+					, #{usePosblYnCd}
+					)
+	</insert>
+	
+	<!-- 회의실 수정 -->
+	<update id="updateMtr" parameterType="mtrVO">
+		UPDATE MEETINGROOM SET					
+					  MTR_LOC = #{mtrLoc}
+					, MTR_NM = #{mtrNm}
+					, ACEPTBL_NMPR = #{aceptblNmpr}
+					<if test="photoUrl != null and photoUrl != ''">
+					, PHOTO_URL = #{photoUrl}
+					</if>
+					, USE_POSBL_YN_CD = #{usePosblYnCd}
+		WHERE
+					MTR_NO = #{mtrNo}
+	</update>
+	
+	<!-- 회의실 삭제 -->
+	<delete id="deleteMtr" parameterType="String">
+		DELETE 
+				FROM MEETINGROOM
+		WHERE 
+				MTR_NO = #{mtrNo}
+	</delete>
+	
+	<!-- 회의실 번호 생성 -->
+	<select id="createMtrNo" resultType="String">
+		SELECT 'ROOM' || TO_CHAR(MAX(TO_NUMBER(REGEXP_SUBSTR(MTR_NO, '\d+'))) + 1)
+		FROM MEETINGROOM
+	</select>
+	
+	<!-- 장비 추가 -->
+	<insert id="createMtrEquipment" parameterType="mtrEquipmentVO">
+		INSERT INTO MEETINGROOM_EQUIPMENT
+							(
+							  EQPMN_NO
+							, MTR_NO
+							, EQUIP_YN_CD
+							)
+		VALUES
+							(
+							  #{eqpmnNo}
+							, #{mtrNo}
+							, #{equipYnCd}
+							)
+	</insert>
+	
+	<!-- 장비 수정 -->
+	<update id="updateMtrEquipment">
+		UPDATE MEETINGROOM_EQUIPMENT SET					
+					EQUIP_YN_CD = #{equipYnCd}
+		WHERE
+					MTR_NO = #{mtrNo}
+		AND
+					EQPMN_NO = #{eqpmnNo}
+	
+	</update>
+	
+	<!-- 장비 삭제 -->
+	<delete id="deleteMtrEquipment">
+		DELETE 
+				FROM MEETINGROOM_EQUIPMENT
+		WHERE 
+				MTR_NO = #{mtrNo}
+	</delete>
+	
+	<!-- 차량 목록 불러오기 -->
+	<select id="getCarList" resultType="carVO">
+		SELECT 
+                  CAR_NO				<!-- 차량 번호 -->				
+    			, CAR_NM				<!-- 차량명 -->	
+   				, PHOTO_URL				<!-- 사진 URL -->	
+    			, CAR_USE_POSBL_YN_CD	<!-- 사용 가능 여부 코드 -->
+    			
+		FROM 
+    			CAR
+	</select>
+	
+	<!-- 차량 추가 -->
+	<insert id="createCar" parameterType="carVO">
+		INSERT INTO CAR
+					(
+					  CAR_NO				<!-- 차량 번호 -->			
+					, CAR_NM				<!-- 차량명 -->	
+					, PHOTO_URL				<!-- 사진 URL -->	
+					, CAR_USE_POSBL_YN_CD	<!-- 사용 가능 여부 코드 -->
+					)
+		VALUES
+					(
+					  #{carNo}
+					, #{carNm}
+					, #{photoUrl}
+					, #{carUsePosblYnCd}
+					)
+	</insert>
+	
+	<!-- 차량 수정 -->
+	<update id="updateCar" parameterType="carVO">
+		UPDATE CAR SET					
+					CAR_NM = #{carNm}
+					<if test="photoUrl != null and photoUrl != ''">
+					, PHOTO_URL = #{photoUrl}
+					</if>
+					, CAR_USE_POSBL_YN_CD = #{carUsePosblYnCd}
+		WHERE
+					CAR_NO = #{carNo}
+				
+	</update>
+	
+	<!-- 차량 삭제 -->
+	<delete id="deleteCar" parameterType="String">
+		DELETE 
+				FROM CAR
+		WHERE 
+				CAR_NO = #{carNo}
+	</delete>
+	
+</mapper>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+   xmlns:security="http://www.springframework.org/schema/security"
+   xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+      http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+   <bean id="customAccessDenied" class="com.team1.workforest.security.CustomAccessDeniedHandler"></bean>
+   <bean id="customLoginSuccess" class="com.team1.workforest.security.CustomLoginSuccessHandler"></bean>
+   
+   <!-- 정해놓은 테이블과 컬럼명으로 로그인 처리 -->
+   <bean id="customUserDetailsService" class="com.team1.workforest.security.CustomUserDetailsService"></bean>
+   <!-- 비밀번호 암호화 사용 -->
+   <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"></bean>
+   
+   <security:http>
+      <!-- iframe 접근 허용 -->
+       <security:headers>
+          <security:frame-options policy="SAMEORIGIN" />
+       </security:headers>
+      <!-- URI패턴으로 접근 제한 설정 -->
+   
+<!-- 	<security:intercept-url pattern="/emp/detail" access="hasRole('ROLE_MEMBER')" /> -->
+	 <security:intercept-url pattern="/emp/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+	 <security:intercept-url pattern="/sendSMS" access="hasRole('ROLE_ADMIN')" />
+	 <security:intercept-url pattern="/admin/list" access="hasRole('ROLE_ADMIN')" />
+	  <security:intercept-url pattern="/admin/deptList" access="hasRole('ROLE_ADMIN')" />
+      <security:intercept-url pattern="/mail/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+      <security:intercept-url pattern="/duty/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+      <security:intercept-url pattern="/project/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+      <security:intercept-url pattern="/approval/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+      <security:intercept-url pattern="/reservation/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+      <security:intercept-url pattern="/schedule/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" /> 
+      <security:intercept-url pattern="/attendance/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+      <security:intercept-url pattern="/notice/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+      <security:intercept-url pattern="/freeboard/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+      <security:intercept-url pattern="/suggestion/**" access="hasAnyRole('ROLE_MEMBER', 'ROLE_ADMIN')" />
+      <security:intercept-url pattern="/admin/survey/**" access="hasAnyRole('ROLE_ADMIN','ROLE_MEMBER')" />
+      <security:intercept-url pattern="/admin/**" access="hasAnyRole('ROLE_ADMIN')" />
+<!-- 	<security:intercept-url pattern="/logout" access="permitAll()" />  -->
+      
+      
+      <!-- 로그인 처리 URI 지정 -->
+      <security:form-login login-page="/" 
+         authentication-success-handler-ref="customLoginSuccess" />
+         
+      <!-- 로그인 정보 기록 / 쿠키 유효 시간은 7일 -->
+      <security:remember-me data-source-ref="dataSource" 
+           token-validity-seconds="604800"/>
+
+      <security:access-denied-handler ref="customAccessDenied" />
+    
+      <!-- 로그아웃 처리 URI 지정, 로그아웃 한 후 세션 무효화 및 쿠키 삭제 -->   
+<!--       <security:logout logout-url="/logout"  invalidate-session="true"  -->
+<!--          delete-cookies="remember-me" logout-success-url="/" />    -->
+        
+         <security:logout invalidate-session="true" delete-cookies="remember-me" logout-success-url="/" />
+    	<security:intercept-url pattern="/logout" access="permitAll()" />
+    	
+	<!-- CSRF 보호 활성화 -->
+    <security:csrf />
+	
+   </security:http>
+   
+   <security:authentication-manager>
+      <security:authentication-provider user-service-ref="customUserDetailsService">
+         <!-- 비밀번호 암호화 사용 -->
+         <security:password-encoder ref="passwordEncoder" />
+      </security:authentication-provider>
+   </security:authentication-manager>
+</beans>
